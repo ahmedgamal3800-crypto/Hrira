@@ -32,7 +32,7 @@ import {
   LanguageType, 
   ReferenceType 
 } from '../types';
-import { getAlphabetKey } from '../services/alphabet';
+import { getAlphabetKey, stripHonorificTitles } from '../services/alphabet';
 import { generateSuggestedCitation } from '../services/citationFormatter';
 import { dbService } from '../services/db';
 import { 
@@ -216,10 +216,14 @@ export const ReferenceDetailsView: React.FC<ReferenceDetailsViewProps> = ({
 
   // Save inline modifications
   const handleSaveInlineEdit = async () => {
+    const cleanFirstName = stripHonorificTitles(editAuthorFirstName.trim());
+    const cleanFamilyName = stripHonorificTitles(editAuthorFamilyName.trim());
+    const cleanFullName = stripHonorificTitles(editAuthorFullName.trim()) || `${cleanFirstName} ${cleanFamilyName}`.trim();
+
     const alphabetKey = getAlphabetKey({
-      authorFamilyName: editAuthorFamilyName,
-      authorFullName: editAuthorFullName,
-      authorFirstName: editAuthorFirstName,
+      authorFamilyName: cleanFamilyName,
+      authorFullName: cleanFullName,
+      authorFirstName: cleanFirstName,
       title: editTitle
     });
 
@@ -227,9 +231,9 @@ export const ReferenceDetailsView: React.FC<ReferenceDetailsViewProps> = ({
       ...reference,
       title: editTitle.trim(),
       subtitle: editSubtitle.trim(),
-      authorFamilyName: editAuthorFamilyName.trim(),
-      authorFirstName: editAuthorFirstName.trim(),
-      authorFullName: editAuthorFullName.trim() || `${editAuthorFirstName} ${editAuthorFamilyName}`.trim(),
+      authorFamilyName: cleanFamilyName,
+      authorFirstName: cleanFirstName,
+      authorFullName: cleanFullName,
       language: editLanguage,
       referenceType: editReferenceType,
       publisher: editPublisher.trim(),
@@ -555,6 +559,10 @@ export const ReferenceDetailsView: React.FC<ReferenceDetailsViewProps> = ({
 
             {/* Row 2: Author Fields */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-[#FAF9F5] p-3.5 rounded-xl border border-[#EBE6DC]">
+              <div className="col-span-full text-[11px] text-amber-900 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5">
+                <span>⚠️ توثيق أكاديمي: لا تضع ألقاباً أمام اسم المؤلف (يُسجل الاسم مجرداً دون دكتور/دكتورة/سير/شيخ).</span>
+              </div>
+
               <div className="space-y-1">
                 <label className="block font-bold text-[#7D2433]">اسم المؤلف الكامل</label>
                 <input

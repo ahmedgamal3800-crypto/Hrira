@@ -23,6 +23,34 @@ export function normalizeArabicChar(char: string): string {
 }
 
 /**
+ * Strips academic, military, aristocratic and religious honorific titles
+ * (e.g. الدكتور، الدكتورة، أ.د.، الشيخ، السير، الأميرة، الأب، اللورد، إلخ)
+ * strictly enforcing that author names are cataloged as pure names without titles.
+ */
+export function stripHonorificTitles(name: string): string {
+  if (!name) return '';
+  let res = name.trim();
+
+  // Remove leading titles
+  const leadingPattern = /^(الدكتور(ة)?|أ\.د\.?|أستاذ(ة)?|الأستاذ(ة)?|د\.?|الشيخ(ة)?|السير|اللورد|لورد|الأمير(ة)?|الأب|القس(يس)?|المطران|البطريرك|الراهب|الفريق|اللواء|العميد|الباشا|الباحث(ة)?|المؤرخ(ة)?|Sir|Dr\.?|Prof\.?|Professor|Father|Fr\.?|Lord|Baron|Lady|Prince|Princess)\s+/iu;
+
+  while (leadingPattern.test(res)) {
+    res = res.replace(leadingPattern, '').trim();
+  }
+
+  // Remove title inside compound conjunctions (e.g. "أحمد فؤاد والدكتورة هويدا" -> "أحمد فؤاد وهويدا")
+  res = res.replace(/(و\s*)(الدكتور(ة)?|د\.?|الأستاذ(ة)?|الشيخ(ة)?|السير|الأمير(ة)?|الأب)\s+/giu, '$1');
+
+  // Also clean inside English parenthetical e.g. "(Sir Steven Runciman)" -> "(Steven Runciman)"
+  res = res.replace(/\((Sir|Lord|Dr\.|Prof\.)\s+/gi, '(');
+
+  // Clean trailing parenthetical descriptions like "(المؤرخ والحقوقي والزعيم الوطني)"
+  res = res.replace(/\s*\((المؤرخ والحقوقي والزعيم الوطني|مفتي بيروت|أبو أسامة الحرستاني)\)/gu, '');
+
+  return res.trim();
+}
+
+/**
  * Cleans text from leading punctuation, quotes, or brackets
  */
 export function cleanLeadingSymbols(text: string): string {
@@ -107,13 +135,13 @@ export function compareCanonicalLetters(letA: string, letB: string): number {
 export function getAuthorFirstNameSortKey(ref: Partial<Reference>, ignoreArabicArticle = false): string {
   let name = '';
   if (ref.authorFirstName && ref.authorFirstName.trim()) {
-    const first = ref.authorFirstName.trim();
-    const family = ref.authorFamilyName ? ref.authorFamilyName.trim() : '';
+    const first = stripHonorificTitles(ref.authorFirstName.trim());
+    const family = ref.authorFamilyName ? stripHonorificTitles(ref.authorFamilyName.trim()) : '';
     name = family ? `${first} ${family}` : first;
   } else if (ref.authorFullName && ref.authorFullName.trim()) {
-    name = ref.authorFullName.trim();
+    name = stripHonorificTitles(ref.authorFullName.trim());
   } else if (ref.authorFamilyName && ref.authorFamilyName.trim()) {
-    name = ref.authorFamilyName.trim();
+    name = stripHonorificTitles(ref.authorFamilyName.trim());
   } else if (ref.title && ref.title.trim()) {
     name = ref.title.trim();
   }

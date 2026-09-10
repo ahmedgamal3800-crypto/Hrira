@@ -12,7 +12,7 @@ import {
 import { getAlphabetKey } from './alphabet';
 import { SEED_REFERENCES_LIST } from '../data/seedReferences';
 
-const DB_NAME = 'HurairahAcademicLibraryDB_v5';
+const DB_NAME = 'HurairahAcademicLibraryDB_v6';
 const DB_VERSION = 1;
 
 export const DEFAULT_TOOL_MEMORY: ToolMemoryState = {

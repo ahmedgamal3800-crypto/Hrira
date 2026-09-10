@@ -15,7 +15,7 @@ import {
   Bot
 } from 'lucide-react';
 import { Reference, ReferenceType, LanguageType, CategoryItem, ReferenceFile } from '../types';
-import { getAlphabetKey } from '../services/alphabet';
+import { getAlphabetKey, stripHonorificTitles } from '../services/alphabet';
 import { generateSuggestedCitation } from '../services/citationFormatter';
 import { dbService } from '../services/db';
 import { extractMetadataFromBookFile } from '../services/bookMetadataExtractor';
@@ -87,9 +87,9 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
     try {
       const result = await searchBookAndAuthorWithAI(aiSearchInput.trim());
       if (result.found) {
-        if (result.authorFullName) setAuthorFullName(result.authorFullName);
-        if (result.authorFirstName) setAuthorFirstName(result.authorFirstName);
-        if (result.authorFamilyName) setAuthorFamilyName(result.authorFamilyName);
+        if (result.authorFullName) setAuthorFullName(stripHonorificTitles(result.authorFullName));
+        if (result.authorFirstName) setAuthorFirstName(stripHonorificTitles(result.authorFirstName));
+        if (result.authorFamilyName) setAuthorFamilyName(stripHonorificTitles(result.authorFamilyName));
         if (result.title) setTitle(result.title);
         if (result.subtitle) setSubtitle(result.subtitle);
         if (result.publisher) setPublisher(result.publisher);
@@ -333,23 +333,27 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim() && !authorFamilyName.trim() && !authorFullName.trim()) {
+    const cleanFullName = stripHonorificTitles(authorFullName);
+    const cleanFirstName = stripHonorificTitles(authorFirstName);
+    const cleanFamilyName = stripHonorificTitles(authorFamilyName);
+
+    if (!title.trim() && !cleanFamilyName.trim() && !cleanFullName.trim()) {
       alert('يرجى كتابة عنوان المرجع أو اسم المؤلف على الأقل.');
       return;
     }
 
     const alphabetKey = getAlphabetKey({
-      authorFamilyName,
-      authorFullName,
-      authorFirstName,
+      authorFamilyName: cleanFamilyName,
+      authorFullName: cleanFullName,
+      authorFirstName: cleanFirstName,
       title
     });
 
     const newReference: Reference = {
       id: reference?.id || 'ref-' + Date.now(),
-      authorFamilyName: authorFamilyName.trim(),
-      authorFirstName: authorFirstName.trim(),
-      authorFullName: authorFullName.trim(),
+      authorFamilyName: cleanFamilyName.trim(),
+      authorFirstName: cleanFirstName.trim(),
+      authorFullName: cleanFullName.trim(),
       title: title.trim(),
       subtitle: subtitle.trim(),
       language,
@@ -363,7 +367,7 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
       isbn: isbn.trim(),
       doi: doi.trim(),
       keywords,
-      fullCitation: fullCitation.trim() || `${authorFullName || authorFamilyName}: ${title}.`,
+      fullCitation: fullCitation.trim() || `${cleanFullName || cleanFamilyName}: ${title}.`,
       alphabetKey,
       categoryIds,
       isFavorite: reference?.isFavorite || false,
@@ -553,12 +557,12 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
 
           {/* Section 1: Authorship Fields (Strict Separation) */}
           <div className="bg-[#FAF8F3] border border-[#E9E3D6] rounded-xl p-4 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="font-bold text-sm text-[#7D2433] flex items-center gap-1.5">
                 <span>بيانات المؤلف (محددة لضبط الفهرسة الأبجدية بدقة)</span>
               </h3>
-              <span className="text-[11px] text-[#6B7280] font-normal">
-                المرجع والترتيب الأبجدي يعتمد على اسم العائلة أو المؤلف
+              <span className="text-[11px] bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-0.5 rounded-md font-semibold">
+                قاعدة توثيقية: لا تضع ألقاباً أمام اسم المؤلف (دون دكتور/دكتورة/سير/شيخ)
               </span>
             </div>
 

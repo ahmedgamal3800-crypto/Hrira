@@ -13,6 +13,7 @@ import {
 } from './types';
 import { dbService, DEFAULT_SETTINGS } from './services/db';
 import { extractMetadataFromBookFile, mergeBookMetadataWithReference } from './services/bookMetadataExtractor';
+import { checkReferenceDuplicate } from './services/duplicateDetector';
 
 // Components
 import { Sidebar } from './components/Sidebar';
@@ -96,6 +97,13 @@ export default function App() {
 
   // Handler: Save Reference (Create or Update with optional Attached File)
   const handleSaveReference = async (ref: Reference, fileBlob?: Blob, reason?: string) => {
+    // Duplicate safety guard
+    const dupCheck = checkReferenceDuplicate(ref, references, editingReference?.id || ref.id);
+    if (dupCheck.isDuplicate && !editingReference) {
+      alert(`خطأ: لا يمكن إضافة هذا المرجع لأنه مسجل مسبقاً في مكتبتك!\n\n${dupCheck.detailsMessage}`);
+      return;
+    }
+
     // 1. If file attached, save to file store
     let updatedRef = { ...ref };
     if (fileBlob && ref.file) {
@@ -551,6 +559,14 @@ export default function App() {
         }}
         onSave={handleSaveReference}
         initialReference={editingReference}
+        reference={editingReference}
+        existingReferences={references}
+        onOpenExistingReference={(existingRef) => {
+          setIsFormModalOpen(false);
+          setEditingReference(null);
+          setSelectedReference(existingRef);
+          setActiveTab('library');
+        }}
         categories={categories}
       />
 

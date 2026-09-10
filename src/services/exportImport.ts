@@ -27,6 +27,7 @@ export function exportToJson(
  */
 export async function importFromJson(jsonString: string): Promise<{
   referencesCount: number;
+  skippedDuplicatesCount: number;
   categoriesCount: number;
 }> {
   const data = JSON.parse(jsonString);
@@ -35,9 +36,22 @@ export async function importFromJson(jsonString: string): Promise<{
   }
 
   const { dbService } = await import('./db');
+  const { checkReferenceDuplicate } = await import('./duplicateDetector');
+  const existingRefs = await dbService.getAllReferences();
+
+  let importedCount = 0;
+  let skippedDuplicatesCount = 0;
 
   for (const ref of data.references) {
+    const dupCheck = checkReferenceDuplicate(ref, existingRefs);
+    if (dupCheck.isDuplicate) {
+      skippedDuplicatesCount++;
+      continue;
+    }
+
     await dbService.saveReference(ref, 'استيراد من ملف خارجي');
+    existingRefs.push(ref);
+    importedCount++;
   }
 
   if (Array.isArray(data.categories)) {
@@ -59,7 +73,8 @@ export async function importFromJson(jsonString: string): Promise<{
   }
 
   return {
-    referencesCount: data.references.length,
+    referencesCount: importedCount,
+    skippedDuplicatesCount,
     categoriesCount: data.categories?.length || 0
   };
 }

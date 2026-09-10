@@ -85,9 +85,13 @@ export const ImportExportView: React.FC<ImportExportViewProps> = ({
       setImportStatus('جاري استيراد البيانات...');
       const text = await file.text();
       const res = await importFromJson(text);
-      setImportStatus(`تم استيراد ${res.referencesCount} مرجعاً بنجاح!`);
+      if (res.skippedDuplicatesCount > 0) {
+        setImportStatus(`تم استيراد ${res.referencesCount} مرجعاً جديداً، وتخطي ${res.skippedDuplicatesCount} مرجعاً مكرراً مسجلاً مسبقاً.`);
+      } else {
+        setImportStatus(`تم استيراد ${res.referencesCount} مرجعاً بنجاح دون أي تكرار!`);
+      }
       onImportComplete();
-      setTimeout(() => setImportStatus(null), 3000);
+      setTimeout(() => setImportStatus(null), 4500);
     } catch (err: any) {
       setImportStatus('حدث خطأ أثناء فحص ملف النسخة الاحتياطية: ' + err.message);
     }

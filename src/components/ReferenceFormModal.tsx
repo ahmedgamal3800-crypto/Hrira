@@ -8,11 +8,13 @@ import {
   Trash2, 
   Check, 
   AlertCircle,
+  AlertTriangle,
   HelpCircle,
   FolderTree,
   Search,
   Loader2,
-  Bot
+  Bot,
+  BookOpen
 } from 'lucide-react';
 import { Reference, ReferenceType, LanguageType, CategoryItem, ReferenceFile } from '../types';
 import { getAlphabetKey, stripHonorificTitles } from '../services/alphabet';
@@ -20,22 +22,34 @@ import { generateSuggestedCitation } from '../services/citationFormatter';
 import { dbService } from '../services/db';
 import { extractMetadataFromBookFile } from '../services/bookMetadataExtractor';
 import { searchBookAndAuthorWithAI } from '../services/aiBookService';
+import { checkReferenceDuplicate, DuplicateCheckResult } from '../services/duplicateDetector';
 
 interface ReferenceFormModalProps {
   reference?: Reference | null;
+  initialReference?: Reference | null;
+  existingReferences?: Reference[];
   isOpen: boolean;
   onClose: () => void;
   onSave: (ref: Reference) => void;
+  onOpenExistingReference?: (ref: Reference) => void;
   categories: CategoryItem[];
 }
 
 export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
   reference,
+  initialReference,
+  existingReferences,
   isOpen,
   onClose,
   onSave,
+  onOpenExistingReference,
   categories
 }) => {
+  const activeReference = reference || initialReference || null;
+
+  // Existing references for duplicate detection
+  const [allReferences, setAllReferences] = useState<Reference[]>(existingReferences || []);
+  const [duplicateError, setDuplicateError] = useState<DuplicateCheckResult | null>(null);
   // Form state
   const [authorFamilyName, setAuthorFamilyName] = useState('');
   const [authorFirstName, setAuthorFirstName] = useState('');
@@ -193,29 +207,38 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
   };
 
   useEffect(() => {
-    if (reference) {
-      setAuthorFamilyName(reference.authorFamilyName || '');
-      setAuthorFirstName(reference.authorFirstName || '');
-      setAuthorFullName(reference.authorFullName || '');
-      setTitle(reference.title || '');
-      setSubtitle(reference.subtitle || '');
-      setLanguage(reference.language || 'العربية');
-      setReferenceType(reference.referenceType || 'كتاب (Book)');
-      setPublisher(reference.publisher || '');
-      setPublicationPlace(reference.publicationPlace || '');
-      setPublicationYear(reference.publicationYear || '');
-      setEdition(reference.edition || '');
-      setVolume(reference.volume || '');
-      setPages(reference.pages || '');
-      setTranslatorOrEditor(reference.translatorOrEditor || '');
-      setAuthorBio(reference.authorBio || '');
-      setHistoricalRelevance(reference.historicalRelevance || '');
-      setIsbn(reference.isbn || '');
-      setDoi(reference.doi || '');
-      setKeywords(reference.keywords || []);
-      setFullCitation(reference.fullCitation || '');
-      setCategoryIds(reference.categoryIds || []);
-      setAttachedFile(reference.file);
+    if (existingReferences && existingReferences.length > 0) {
+      setAllReferences(existingReferences);
+    } else if (isOpen) {
+      dbService.getAllReferences().then(setAllReferences).catch(console.error);
+    }
+  }, [existingReferences, isOpen]);
+
+  useEffect(() => {
+    setDuplicateError(null);
+    if (activeReference) {
+      setAuthorFamilyName(activeReference.authorFamilyName || '');
+      setAuthorFirstName(activeReference.authorFirstName || '');
+      setAuthorFullName(activeReference.authorFullName || '');
+      setTitle(activeReference.title || '');
+      setSubtitle(activeReference.subtitle || '');
+      setLanguage(activeReference.language || 'العربية');
+      setReferenceType(activeReference.referenceType || 'كتاب (Book)');
+      setPublisher(activeReference.publisher || '');
+      setPublicationPlace(activeReference.publicationPlace || '');
+      setPublicationYear(activeReference.publicationYear || '');
+      setEdition(activeReference.edition || '');
+      setVolume(activeReference.volume || '');
+      setPages(activeReference.pages || '');
+      setTranslatorOrEditor(activeReference.translatorOrEditor || '');
+      setAuthorBio(activeReference.authorBio || '');
+      setHistoricalRelevance(activeReference.historicalRelevance || '');
+      setIsbn(activeReference.isbn || '');
+      setDoi(activeReference.doi || '');
+      setKeywords(activeReference.keywords || []);
+      setFullCitation(activeReference.fullCitation || '');
+      setCategoryIds(activeReference.categoryIds || []);
+      setAttachedFile(activeReference.file);
       setFileBlob(null);
       setAiFilledFields([]);
       setAiSuccessNotice(null);
@@ -250,7 +273,34 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
       setAiSuccessNotice(null);
       setAiSearchError(null);
     }
-  }, [reference, isOpen]);
+  }, [activeReference, isOpen]);
+
+  // Real-time live duplicate check as the user types
+  const liveDuplicate = React.useMemo(() => {
+    if (!isOpen) return null;
+    const cleanFam = stripHonorificTitles(authorFamilyName).trim();
+    const cleanFull = stripHonorificTitles(authorFullName).trim();
+    const cleanFirst = stripHonorificTitles(authorFirstName).trim();
+
+    if (title.trim().length < 3 && fullCitation.trim().length < 15 && isbn.trim().length < 8) {
+      return null;
+    }
+
+    const res = checkReferenceDuplicate({
+      id: activeReference?.id,
+      title: title.trim(),
+      authorFamilyName: cleanFam,
+      authorFullName: cleanFull,
+      authorFirstName: cleanFirst,
+      publicationYear: publicationYear.trim(),
+      publisher: publisher.trim(),
+      isbn: isbn.trim(),
+      doi: doi.trim(),
+      fullCitation: fullCitation.trim()
+    }, allReferences, activeReference?.id);
+
+    return res.isDuplicate ? res : null;
+  }, [isOpen, title, authorFamilyName, authorFullName, authorFirstName, publicationYear, publisher, isbn, doi, fullCitation, allReferences, activeReference]);
 
   // If author first & family are typed and full name is empty, provide soft suggestion
   const handleFamilyNameChange = (val: string) => {
@@ -433,6 +483,30 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
       return;
     }
 
+    // DUPLICATE REFERENCE VERIFICATION GUARD
+    const dupCheck = checkReferenceDuplicate({
+      id: activeReference?.id,
+      title: title.trim(),
+      authorFamilyName: cleanFamilyName.trim(),
+      authorFirstName: cleanFirstName.trim(),
+      authorFullName: cleanFullName.trim(),
+      publicationYear: publicationYear.trim(),
+      publisher: publisher.trim(),
+      isbn: isbn.trim(),
+      doi: doi.trim(),
+      fullCitation: fullCitation.trim()
+    }, allReferences, activeReference?.id);
+
+    if (dupCheck.isDuplicate) {
+      setDuplicateError(dupCheck);
+      // Scroll to top of modal form to show the error banner clearly
+      const formEl = document.getElementById('reference-form-scrollable');
+      if (formEl) {
+        formEl.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return;
+    }
+
     const alphabetKey = getAlphabetKey({
       authorFamilyName: cleanFamilyName,
       authorFullName: cleanFullName,
@@ -441,7 +515,7 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
     });
 
     const newReference: Reference = {
-      id: reference?.id || 'ref-' + Date.now(),
+      id: activeReference?.id || 'ref-' + Date.now(),
       authorFamilyName: cleanFamilyName.trim(),
       authorFirstName: cleanFirstName.trim(),
       authorFullName: cleanFullName.trim(),
@@ -464,9 +538,9 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
       fullCitation: fullCitation.trim() || `${cleanFullName || cleanFamilyName}: ${title}.`,
       alphabetKey,
       categoryIds,
-      isFavorite: reference?.isFavorite || false,
+      isFavorite: activeReference?.isFavorite || false,
       inTrash: false,
-      dateAdded: reference?.dateAdded || new Date().toISOString(),
+      dateAdded: activeReference?.dateAdded || new Date().toISOString(),
       lastModified: new Date().toISOString(),
       file: attachedFile
     };
@@ -508,7 +582,116 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
         </div>
 
         {/* Modal Body / Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6 text-xs md:text-sm">
+        <form 
+          id="reference-form-scrollable"
+          onSubmit={handleSubmit} 
+          className="flex-1 overflow-y-auto p-6 space-y-6 text-xs md:text-sm"
+        >
+          {/* DUPLICATE REFERENCE ERROR BANNER */}
+          {duplicateError && duplicateError.matchedReference && (
+            <div 
+              id="duplicate-reference-error-card" 
+              className="bg-red-50 border-2 border-red-500 rounded-2xl p-5 text-red-950 space-y-4 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-red-900 flex items-center gap-2">
+                      <span>خطأ: لا يمكن إضافة هذا المرجع لأنه مكرر ومسجل مسبقاً!</span>
+                    </h3>
+                    <p className="text-xs text-red-800 mt-1 leading-relaxed">
+                      {duplicateError.detailsMessage || 'تم العثور على تطابق كامل مع مرجع آخر مسجل في مكتبتك الأكاديمية.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDuplicateError(null)}
+                  className="p-1 text-red-500 hover:text-red-800 hover:bg-red-100 rounded-lg transition-colors cursor-pointer"
+                  title="إغلاق التنبيه"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Matched Reference Details Box */}
+              <div className="bg-white border border-red-200 rounded-xl p-4 space-y-2.5 shadow-2xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-red-100">
+                  <span className="text-xs font-bold text-red-900 flex items-center gap-1.5">
+                    <BookOpen className="w-4 h-4 text-[#7D2433]" />
+                    <span>بيانات المرجع الأصلي المطابق في مكتبتك:</span>
+                  </span>
+                  <span className="text-[11px] bg-red-100 text-red-800 px-2.5 py-0.5 rounded-full font-bold">
+                    سبب المنع: {duplicateError.matchReason}
+                  </span>
+                </div>
+
+                <div className="text-xs space-y-1.5 text-[#374151]">
+                  <div>
+                    <span className="font-semibold text-[#1F2937]">عنوان الكتاب: </span>
+                    <span className="font-bold text-[#7D2433] text-sm">{duplicateError.matchedReference.title}</span>
+                    {duplicateError.matchedReference.subtitle && (
+                      <span className="text-[#6B7280]"> - {duplicateError.matchedReference.subtitle}</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-[#1F2937]">المؤلف: </span>
+                    <span className="font-medium text-[#111827]">
+                      {duplicateError.matchedReference.authorFullName || duplicateError.matchedReference.authorFamilyName || 'غير محدد'}
+                    </span>
+                    {duplicateError.matchedReference.publicationYear && (
+                      <span className="text-[#6B7280]"> • سنة النشر: {duplicateError.matchedReference.publicationYear}</span>
+                    )}
+                    {duplicateError.matchedReference.publisher && (
+                      <span className="text-[#6B7280]"> • دار النشر: {duplicateError.matchedReference.publisher}</span>
+                    )}
+                  </div>
+
+                  {duplicateError.matchedReference.fullCitation && (
+                    <div className="mt-2 text-[11px] text-[#4B5563] bg-[#FAF9F5] p-2.5 rounded-lg border border-[#E9E3D6] font-serif leading-relaxed">
+                      <span className="font-bold block mb-0.5 text-[#7D2433]">الصيغة التوثيقية المعتمدة للمرجع المطابق:</span>
+                      {duplicateError.matchedReference.fullCitation}
+                    </div>
+                  )}
+
+                  {duplicateError.isInTrash && (
+                    <div className="bg-amber-50 border border-amber-300 text-amber-900 p-2.5 rounded-lg text-xs font-semibold flex items-center gap-2 mt-2">
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>تنبيه: هذا المرجع موجود حالياً داخل «سلة المحذوفات». يمكنك استعادته مباشرة بدلاً من تكرار إضافته.</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-red-100 mt-2">
+                  {onOpenExistingReference && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onOpenExistingReference(duplicateError.matchedReference!);
+                        onClose();
+                      }}
+                      className="px-4 py-2 bg-[#7D2433] hover:bg-[#681E2A] text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <BookOpen className="w-3.5 h-3.5" />
+                      <span>الانتقال فوراً إلى المرجع المسجل في المكتبة</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setDuplicateError(null)}
+                    className="px-3.5 py-2 bg-white border border-[#D5CEC0] hover:bg-[#F3EFE7] text-[#374151] rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+                  >
+                    العودة لتعديل البيانات وتغيير العنوان
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Auto-fill notification banner if a file was just uploaded & analyzed */}
           {autoFillNotice && (
             <div className="bg-emerald-50 border border-emerald-300 text-emerald-950 p-4 rounded-xl space-y-2">
@@ -731,9 +914,37 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="مثال: الألكسياد / The Last Centuries of Byzantium"
-                className="w-full px-3 py-2 bg-white border border-[#DDD6CA] rounded-lg text-xs md:text-sm font-citation text-base focus:ring-2 focus:ring-[#7D2433] focus:border-transparent outline-none font-bold"
+                className={`w-full px-3 py-2 bg-white border rounded-lg text-xs md:text-sm font-citation text-base focus:ring-2 outline-none font-bold ${
+                  liveDuplicate 
+                    ? 'border-red-400 focus:ring-red-500 bg-red-50/30' 
+                    : 'border-[#DDD6CA] focus:ring-[#7D2433]'
+                }`}
                 required
               />
+
+              {/* Real-time live duplicate warning */}
+              {liveDuplicate && liveDuplicate.matchedReference && (
+                <div className="mt-1.5 p-2.5 bg-red-50 border border-red-300 rounded-lg text-xs text-red-900 flex items-center justify-between gap-2 animate-in fade-in">
+                  <div className="flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                    <span>
+                      <strong>تنبيه تكرار:</strong> هذا المرجع مسجل بالفعل للمؤلف ({liveDuplicate.matchedReference.authorFullName || liveDuplicate.matchedReference.authorFamilyName}) - لن يُسمح بحفظه مكرراً.
+                    </span>
+                  </div>
+                  {onOpenExistingReference && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onOpenExistingReference(liveDuplicate.matchedReference!);
+                        onClose();
+                      }}
+                      className="text-[#7D2433] hover:underline font-bold text-[11px] shrink-0 cursor-pointer"
+                    >
+                      عرض المرجع الحالي
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
@@ -1109,19 +1320,33 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
         </form>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3.5 bg-[#FAF9F5] border-t border-[#E5E0D5] flex items-center justify-between">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 bg-white border border-[#DDD6CA] hover:bg-[#F3EFE7] text-[#4B5563] font-medium rounded-lg text-xs md:text-sm cursor-pointer"
-          >
-            إلغاء
-          </button>
+        <div className="px-6 py-3.5 bg-[#FAF9F5] border-t border-[#E5E0D5] flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-white border border-[#DDD6CA] hover:bg-[#F3EFE7] text-[#4B5563] font-medium rounded-lg text-xs md:text-sm cursor-pointer"
+            >
+              إلغاء
+            </button>
+
+            {(duplicateError || liveDuplicate) && (
+              <span className="text-xs text-red-700 font-bold flex items-center gap-1 bg-red-50 px-2.5 py-1 rounded-md border border-red-200">
+                <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+                <span>المرجع مكرر - يُمنع تكرار الإضافة</span>
+              </span>
+            )}
+          </div>
 
           <button
             type="button"
             onClick={handleSubmit}
-            className="px-6 py-2 bg-[#7D2433] hover:bg-[#681E2A] text-white font-bold rounded-lg text-xs md:text-sm shadow-sm transition-colors flex items-center gap-2 cursor-pointer"
+            disabled={Boolean(liveDuplicate)}
+            className={`px-6 py-2 font-bold rounded-lg text-xs md:text-sm shadow-sm transition-colors flex items-center gap-2 ${
+              liveDuplicate 
+                ? 'bg-red-200 text-red-700 border border-red-300 cursor-not-allowed' 
+                : 'bg-[#7D2433] hover:bg-[#681E2A] text-white cursor-pointer'
+            }`}
           >
             <Save className="w-4 h-4" />
             <span>{reference ? 'حفظ التعديلات' : 'إضافة المرجع للمكتبة'}</span>

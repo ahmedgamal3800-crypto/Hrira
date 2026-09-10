@@ -50,6 +50,9 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
   const [edition, setEdition] = useState('');
   const [volume, setVolume] = useState('');
   const [pages, setPages] = useState('');
+  const [translatorOrEditor, setTranslatorOrEditor] = useState('');
+  const [authorBio, setAuthorBio] = useState('');
+  const [historicalRelevance, setHistoricalRelevance] = useState('');
   const [isbn, setIsbn] = useState('');
   const [doi, setDoi] = useState('');
   const [keywordInput, setKeywordInput] = useState('');
@@ -74,36 +77,111 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [aiSearchError, setAiSearchError] = useState<string | null>(null);
   const [aiSuccessNotice, setAiSuccessNotice] = useState<string | null>(null);
+  const [aiFilledFields, setAiFilledFields] = useState<{ label: string; value: string }[]>([]);
 
   const handleAiSearchBook = async () => {
     if (!aiSearchInput.trim()) {
-      setAiSearchError('يرجى كتابة اسم الكتاب أو المؤلف أو نص التوثيق أولاً للبحث.');
+      setAiSearchError('يرجى كتابة أو لصق بيانات الكتاب أو التوثيق الخام أولاً للبدء.');
       return;
     }
     setIsAiSearching(true);
     setAiSearchError(null);
     setAiSuccessNotice(null);
+    setAiFilledFields([]);
 
     try {
       const result = await searchBookAndAuthorWithAI(aiSearchInput.trim());
       if (result.found) {
-        if (result.authorFullName) setAuthorFullName(stripHonorificTitles(result.authorFullName));
-        if (result.authorFirstName) setAuthorFirstName(stripHonorificTitles(result.authorFirstName));
-        if (result.authorFamilyName) setAuthorFamilyName(stripHonorificTitles(result.authorFamilyName));
-        if (result.title) setTitle(result.title);
-        if (result.subtitle) setSubtitle(result.subtitle);
-        if (result.publisher) setPublisher(result.publisher);
-        if (result.publicationPlace) setPublicationPlace(result.publicationPlace);
-        if (result.publicationYear) setPublicationYear(result.publicationYear);
-        if (result.edition) setEdition(result.edition);
-        if (result.volume) setVolume(result.volume);
-        if (result.language) setLanguage(result.language);
-        if (result.referenceType) setReferenceType(result.referenceType);
-        if (result.fullCitation) setFullCitation(result.fullCitation);
+        const filledList: { label: string; value: string }[] = [];
+
+        if (result.authorFullName) {
+          const cleanFull = stripHonorificTitles(result.authorFullName);
+          setAuthorFullName(cleanFull);
+          filledList.push({ label: 'اسم المؤلف الكامل', value: cleanFull });
+        }
+        if (result.authorFirstName) {
+          const cleanFirst = stripHonorificTitles(result.authorFirstName);
+          setAuthorFirstName(cleanFirst);
+          filledList.push({ label: 'الاسم الأول (للترتيب الأبجدي)', value: cleanFirst });
+        }
+        if (result.authorFamilyName) {
+          const cleanFamily = stripHonorificTitles(result.authorFamilyName);
+          setAuthorFamilyName(cleanFamily);
+          filledList.push({ label: 'اسم العائلة / الشهرة', value: cleanFamily });
+        }
+        if (result.title) {
+          setTitle(result.title);
+          filledList.push({ label: 'عنوان الكتاب', value: result.title });
+        }
+        if (result.subtitle) {
+          setSubtitle(result.subtitle);
+          filledList.push({ label: 'العنوان الفرعي', value: result.subtitle });
+        }
+        if (result.publisher) {
+          setPublisher(result.publisher);
+          filledList.push({ label: 'دار النشر', value: result.publisher });
+        }
+        if (result.publicationPlace) {
+          setPublicationPlace(result.publicationPlace);
+          filledList.push({ label: 'مكان النشر', value: result.publicationPlace });
+        }
+        if (result.publicationYear) {
+          setPublicationYear(result.publicationYear);
+          filledList.push({ label: 'سنة النشر', value: result.publicationYear });
+        }
+        if (result.edition) {
+          setEdition(result.edition);
+          filledList.push({ label: 'الطبعة', value: result.edition });
+        }
+        if (result.volume) {
+          setVolume(result.volume);
+          filledList.push({ label: 'المجلد', value: result.volume });
+        }
+        if (result.pages) {
+          setPages(result.pages);
+          filledList.push({ label: 'الصفحات', value: result.pages });
+        }
+        if (result.translatorOrEditor) {
+          setTranslatorOrEditor(result.translatorOrEditor);
+          filledList.push({ label: 'المترجم/المحقق', value: result.translatorOrEditor });
+        }
+        if (result.language) {
+          const validLangs: LanguageType[] = ['العربية', 'English', 'Français', 'Greek', 'Deutsch', 'Latin', 'Türkçe', 'Español', 'Italiano', 'أخرى'];
+          const matchedLang = validLangs.find(l => l.toLowerCase() === result.language.toLowerCase()) || 
+                             (result.language.toLowerCase().includes('eng') ? 'English' : 'العربية');
+          setLanguage(matchedLang);
+          filledList.push({ label: 'اللغة', value: matchedLang });
+        }
+        if (result.referenceType) {
+          let rType: ReferenceType = 'كتاب (Book)';
+          const rtLower = result.referenceType.toLowerCase();
+          if (rtLower.includes('book') || rtLower.includes('كتاب')) rType = 'كتاب (Book)';
+          else if (rtLower.includes('section') || rtLower.includes('فصل') || rtLower.includes('chapter')) rType = 'فصل في كتاب (Book Section)';
+          else if (rtLower.includes('article') || rtLower.includes('مقال') || rtLower.includes('دورية')) rType = 'مقالة في دورية محكمة (Journal Article)';
+          else if (rtLower.includes('primary') || rtLower.includes('مصدر') || rtLower.includes('مخطوط')) rType = 'مصدر أصلي / مخطوط (Primary Source)';
+          else if (rtLower.includes('thesis') || rtLower.includes('رسالة')) rType = 'رسالة ماجستير (Master Thesis)';
+          else if (rtLower.includes('dissertation') || rtLower.includes('دكتوراه')) rType = 'أطروحة دكتوراه (PhD Dissertation)';
+          else if (rtLower.includes('document') || rtLower.includes('وثيقة')) rType = 'وثيقة أرشيفية (Archival Document)';
+          else if (rtLower.includes('conference') || rtLower.includes('مؤتمر')) rType = 'بحث مؤتمر (Conference Paper)';
+          setReferenceType(rType);
+          filledList.push({ label: 'نوع المرجع', value: rType });
+        }
+        if (result.fullCitation) {
+          setFullCitation(result.fullCitation);
+        }
+        if (result.authorBio) {
+          setAuthorBio(result.authorBio);
+        }
+        if (result.historicalRelevance) {
+          setHistoricalRelevance(result.historicalRelevance);
+        }
         if (result.keywords && result.keywords.length > 0) {
           setKeywords(prev => Array.from(new Set([...prev, ...result.keywords])));
+          filledList.push({ label: 'الكلمات المفتاحية', value: result.keywords.slice(0, 4).join(', ') });
         }
-        setAiSuccessNotice(`تم التحقق بنجاح من المرجع! اسم المؤلف الكامل: ${result.authorFullName}`);
+
+        setAiFilledFields(filledList);
+        setAiSuccessNotice(`تم استخراج وتعبئة بيانات المرجع بالكامل بنجاح بواسطة الذكاء الاصطناعي (${filledList.length} حقول تم ملؤها تلقائياً بدقة).`);
       } else {
         setAiSearchError('لم يتم العثور على نتائج دقيقة لهذا المرجع.');
       }
@@ -129,6 +207,9 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
       setEdition(reference.edition || '');
       setVolume(reference.volume || '');
       setPages(reference.pages || '');
+      setTranslatorOrEditor(reference.translatorOrEditor || '');
+      setAuthorBio(reference.authorBio || '');
+      setHistoricalRelevance(reference.historicalRelevance || '');
       setIsbn(reference.isbn || '');
       setDoi(reference.doi || '');
       setKeywords(reference.keywords || []);
@@ -136,6 +217,9 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
       setCategoryIds(reference.categoryIds || []);
       setAttachedFile(reference.file);
       setFileBlob(null);
+      setAiFilledFields([]);
+      setAiSuccessNotice(null);
+      setAiSearchError(null);
     } else {
       // Reset form
       setAuthorFamilyName('');
@@ -151,6 +235,9 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
       setEdition('');
       setVolume('');
       setPages('');
+      setTranslatorOrEditor('');
+      setAuthorBio('');
+      setHistoricalRelevance('');
       setIsbn('');
       setDoi('');
       setKeywords([]);
@@ -158,6 +245,10 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
       setCategoryIds([]);
       setAttachedFile(undefined);
       setFileBlob(null);
+      setAiSearchInput('');
+      setAiFilledFields([]);
+      setAiSuccessNotice(null);
+      setAiSearchError(null);
     }
   }, [reference, isOpen]);
 
@@ -364,6 +455,9 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
       edition: edition.trim(),
       volume: volume.trim(),
       pages: pages.trim(),
+      translatorOrEditor: translatorOrEditor.trim(),
+      authorBio: authorBio.trim(),
+      historicalRelevance: historicalRelevance.trim(),
       isbn: isbn.trim(),
       doi: doi.trim(),
       keywords,
@@ -457,31 +551,31 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
                 <div className="p-1.5 bg-[#7D2433] text-white rounded-lg shadow-xs">
                   <Bot className="w-4 h-4" />
                 </div>
-                <span>البحث عن الكتاب وتدقيق اسم المؤلف بالذكاء الاصطناعي</span>
+                <span>استخراج وتعبئة بيانات الكتاب بالذكاء الاصطناعي (Smart Citation Parser)</span>
               </div>
               <span className="text-[11px] bg-[#7D2433]/10 text-[#7D2433] px-2.5 py-1 rounded-full font-semibold">
-                استخراج الاسم الكامل والموثق آلياً
+                تحليل التوثيقات الخام وتجريد الألقاب آلياً
               </span>
             </div>
 
             <p className="text-xs text-[#5D5548] leading-relaxed">
-              اكتب أو الصق اسم الكتاب أو المؤلف أو التوثيق الخام (مثل: <span className="font-mono text-[#7D2433] font-medium" dir="ltr">Akropolites, G., The History</span> أو <span className="font-mono text-[#7D2433] font-medium" dir="ltr">Alix, Precis</span> أو <span className="font-medium text-[#7D2433]">ابن البيبي: تاريخ سلاجقة الروم</span>)، وسيقوم الذكاء الاصطناعي بالبحث والتحقق واستخراج اسم المؤلف الرباعي/الكامل وصيغة التوثيق المعتمدة وتعبئة الحقول آلياً:
+              الصق أي صيغة توثيق خام أو اسم كتاب باللغة العربية أو الإنجليزية (مثل: <span className="font-mono text-[#7D2433] font-semibold" dir="ltr">Angelov, D., Imperial Ideology and Political Thought in Byzantium,1204–1330, Cambridge, Cambridge University Press,2007, PP. 78- 133.</span>)، وسيقوم الذكاء الاصطناعي فوراً بتفكيك النص وتعبئة جميع الحقول (المؤلف مجرداً من الألقاب، العنوان، الدار، المكان، السنة، والصفحات):
             </p>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
-                <input
-                  type="text"
+                <textarea
                   value={aiSearchInput}
                   onChange={(e) => setAiSearchInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
                       handleAiSearchBook();
                     }
                   }}
-                  placeholder="اكتب اسم الكتاب أو نص التوثيق هنا للبحث والتدقيق..."
-                  className="w-full pl-3 pr-9 py-2.5 bg-white border border-[#C5B79F] rounded-xl text-xs md:text-sm focus:ring-2 focus:ring-[#7D2433] focus:border-transparent outline-none shadow-inner"
+                  rows={2}
+                  placeholder="الصق هنا نص التوثيق الخام أو اسم الكتاب للتحليل والتعبئة التلقائية..."
+                  className="w-full pl-3 pr-9 py-2 bg-white border border-[#C5B79F] rounded-xl text-xs md:text-sm focus:ring-2 focus:ring-[#7D2433] focus:border-transparent outline-none shadow-inner resize-none font-sans"
                 />
                 <Search className="w-4 h-4 text-[#8C7E6C] absolute right-3 top-3" />
               </div>
@@ -490,17 +584,17 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
                 type="button"
                 onClick={handleAiSearchBook}
                 disabled={isAiSearching}
-                className="px-4 py-2.5 bg-[#7D2433] hover:bg-[#631B27] disabled:bg-[#9E8B83] text-white font-bold rounded-xl text-xs md:text-sm transition-all flex items-center gap-2 shadow-xs cursor-pointer shrink-0"
+                className="px-5 py-2.5 bg-[#7D2433] hover:bg-[#631B27] disabled:bg-[#9E8B83] text-white font-bold rounded-xl text-xs md:text-sm transition-all flex sm:flex-col items-center justify-center gap-1.5 shadow-xs cursor-pointer shrink-0"
               >
                 {isAiSearching ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>جارٍ البحث والتدقيق...</span>
+                    <span>جارٍ التحليل والتعبئة...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 text-[#E6C687]" />
-                    <span>تدقيق وتعبئة ذكية</span>
+                    <span>تعبئة ذكية فورية</span>
                   </>
                 )}
               </button>
@@ -508,23 +602,24 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
 
             {/* Quick pre-set examples */}
             <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] text-[#6B7280]">
-              <span className="font-medium text-[#4B5563]">أمثلة سريعة للتجربة:</span>
+              <span className="font-medium text-[#4B5563]">أمثلة للتجربة بنقرة واحدة:</span>
               {[
-                'Akropolites, G., The History',
-                'Bartusis, The Late Byzantine Army',
-                'Burns, Catalan Company',
-                'ابن البيبي: تاريخ سلاجقة الروم',
-                'العاشق باشا زاده'
+                { label: 'Angelov (توثيق خام كامل مع الصفحات)', val: 'Angelov, D., Imperial Ideology and Political Thought in Byzantium,1204–1330, Cambridge, Cambridge University Press,2007, PP. 78- 133.' },
+                { label: 'Akropolites, G., The History', val: 'Akropolites, G., The History' },
+                { label: 'Bartusis, The Late Byzantine Army', val: 'Bartusis, The Late Byzantine Army' },
+                { label: 'ابن البيبي: تاريخ سلاجقة الروم', val: 'ابن البيبي: تاريخ سلاجقة الروم' },
+                { label: 'العاشق باشا زاده', val: 'العاشق باشا زاده' }
               ].map((example, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => {
-                    setAiSearchInput(example);
+                    setAiSearchInput(example.val);
                   }}
-                  className="bg-white/80 hover:bg-white border border-[#D9CEBA] px-2 py-0.5 rounded-md text-[#5D5548] hover:text-[#7D2433] transition-colors cursor-pointer"
+                  className="bg-white/80 hover:bg-white border border-[#D9CEBA] px-2 py-1 rounded-md text-[#5D5548] hover:text-[#7D2433] transition-colors cursor-pointer text-right"
+                  title={example.val}
                 >
-                  {example}
+                  {example.label}
                 </button>
               ))}
             </div>
@@ -537,20 +632,33 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
               </div>
             )}
 
-            {/* AI Success Notice */}
+            {/* AI Success Notice & Badges */}
             {aiSuccessNotice && (
-              <div className="bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs p-3 rounded-xl flex items-center justify-between gap-2 animate-in fade-in duration-200">
-                <div className="flex items-center gap-2 font-medium">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>{aiSuccessNotice}</span>
+              <div className="bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs p-3.5 rounded-xl space-y-2 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between gap-2 font-semibold">
+                  <div className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{aiSuccessNotice}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAiSuccessNotice(null)}
+                    className="text-emerald-700 hover:text-emerald-900 p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setAiSuccessNotice(null)}
-                  className="text-emerald-700 hover:text-emerald-900 p-0.5"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+
+                {aiFilledFields.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1 border-t border-emerald-200/60">
+                    {aiFilledFields.map((f, i) => (
+                      <span key={i} className="inline-flex items-center gap-1 bg-white/90 border border-emerald-200 text-emerald-800 px-2 py-0.5 rounded-md text-[11px]">
+                        <span className="font-bold text-emerald-950">{f.label}:</span>
+                        <span className="max-w-[200px] truncate" dir="auto">{f.value}</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -696,8 +804,8 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
             </div>
           </div>
 
-          {/* Section 3: Edition, Volume, Year, Pages */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+          {/* Section 3: Edition, Volume, Year, Pages, Translator */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
             <div>
               <label className="block font-semibold text-[#374151] mb-1">
                 سنة النشر (Year)
@@ -745,7 +853,20 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
                 type="text"
                 value={pages}
                 onChange={(e) => setPages(e.target.value)}
-                placeholder="مثال: 448 أو 120-145"
+                placeholder="مثال: 448 أو 78-133"
+                className="w-full px-3 py-2 bg-white border border-[#DDD6CA] rounded-lg text-xs md:text-sm focus:ring-2 focus:ring-[#7D2433] outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-[#374151] mb-1">
+                المترجم / المحقق / المحرر
+              </label>
+              <input
+                type="text"
+                value={translatorOrEditor}
+                onChange={(e) => setTranslatorOrEditor(e.target.value)}
+                placeholder="مثال: ترجمة: ... / تحقيق: ..."
                 className="w-full px-3 py-2 bg-white border border-[#DDD6CA] rounded-lg text-xs md:text-sm focus:ring-2 focus:ring-[#7D2433] outline-none"
               />
             </div>
@@ -827,6 +948,34 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
               ))}
             </div>
           )}
+
+          {/* Historical Relevance & Academic Bio */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 bg-[#FAF9F5] border border-[#E9E3D6] rounded-xl p-3.5">
+            <div>
+              <label className="block font-semibold text-[#374151] mb-1 text-xs">
+                الأهمية التاريخية للمرجع في سياق الأطروحة:
+              </label>
+              <textarea
+                value={historicalRelevance}
+                onChange={(e) => setHistoricalRelevance(e.target.value)}
+                rows={2}
+                placeholder="أهمية الكتاب للأطروحة، أو الفترة التاريخية التي يغطيها..."
+                className="w-full px-3 py-1.5 bg-white border border-[#DDD6CA] rounded-lg text-xs focus:ring-2 focus:ring-[#7D2433] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-[#374151] mb-1 text-xs">
+                نبذة أكاديمية عن المؤلف:
+              </label>
+              <textarea
+                value={authorBio}
+                onChange={(e) => setAuthorBio(e.target.value)}
+                rows={2}
+                placeholder="تخصص المؤلف، مكانته العلمية، انتمائه الأكاديمي..."
+                className="w-full px-3 py-1.5 bg-white border border-[#DDD6CA] rounded-lg text-xs focus:ring-2 focus:ring-[#7D2433] outline-none"
+              />
+            </div>
+          </div>
 
           {/* Section 5: Categories */}
           {categories.length > 0 && (

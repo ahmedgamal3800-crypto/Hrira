@@ -15,6 +15,9 @@ export interface AIBookSearchResult {
   publicationYear?: string;
   edition?: string;
   volume?: string;
+  pages?: string;
+  isbn?: string;
+  doi?: string;
   language: LanguageType;
   referenceType: ReferenceType;
   fullCitation: string;

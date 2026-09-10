@@ -1077,7 +1077,33 @@ export const ReferenceDetailsView: React.FC<ReferenceDetailsViewProps> = ({
                   {reference.doi || '—'}
                 </span>
               </div>
+
+              {reference.translatorOrEditor && (
+                <div className="bg-[#FAF9F5] p-3 rounded-lg border border-[#EFEBE4] col-span-2">
+                  <span className="text-[#8C827A] text-xs block mb-0.5">المترجم / المحقق / المحرر:</span>
+                  <span className="font-semibold text-[#1F2937]">{reference.translatorOrEditor}</span>
+                </div>
+              )}
+
+              {reference.historicalRelevance && (
+                <div className="bg-[#FAF9F5] p-3 rounded-lg border border-[#EFEBE4] col-span-2">
+                  <span className="text-[#8C827A] text-xs block mb-0.5">الأهمية العلمية والصلة بالأطروحة:</span>
+                  <span className="font-semibold text-[#1F2937]">{reference.historicalRelevance}</span>
+                </div>
+              )}
             </div>
+
+            {reference.authorBio && (
+              <div className="bg-[#F8F5EE] border border-[#E6DEC9] rounded-xl p-4 mt-3">
+                <div className="flex items-center gap-2 text-[#7D2433] font-bold text-xs mb-1">
+                  <Info className="w-4 h-4" />
+                  <span>نبذة أكاديمية عن المؤلف ومكانته العلمية:</span>
+                </div>
+                <p className="text-xs md:text-sm text-[#374151] leading-relaxed">
+                  {reference.authorBio}
+                </p>
+              </div>
+            )}
 
             {reference.keywords && reference.keywords.length > 0 && (
               <div className="pt-2">

@@ -20,9 +20,13 @@ import {
   Sparkles,
   List,
   LayoutGrid,
-  GraduationCap
+  GraduationCap,
+  Bot,
+  Loader2,
+  X
 } from 'lucide-react';
 import { Reference, CategoryItem, ToolMemoryState, AppSettings } from '../types';
+import { searchBookAndAuthorWithAI, AIBookSearchResult } from '../services/aiBookService';
 import { 
   getCanonicalBookSortKey, 
   getCanonicalBookLetter, 
@@ -84,6 +88,62 @@ export const MasterCatalogueView: React.FC<MasterCatalogueViewProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [showMemoryModal, setShowMemoryModal] = useState(false);
+
+  // AI Book Lookup Modal State
+  const [showAiLookupModal, setShowAiLookupModal] = useState(false);
+  const [aiLookupQuery, setAiLookupQuery] = useState('');
+  const [isAiLookingUp, setIsAiLookingUp] = useState(false);
+  const [aiLookupResult, setAiLookupResult] = useState<AIBookSearchResult | null>(null);
+  const [aiLookupError, setAiLookupError] = useState<string | null>(null);
+  const [copiedAiCitation, setCopiedAiCitation] = useState(false);
+
+  const handleExecuteAiLookup = async (queryText?: string) => {
+    const q = (queryText || aiLookupQuery).trim();
+    if (!q) {
+      setAiLookupError('يرجى إدخال اسم الكتاب أو المؤلف أو نص التوثيق للبحث.');
+      return;
+    }
+    setIsAiLookingUp(true);
+    setAiLookupError(null);
+    setAiLookupResult(null);
+
+    try {
+      const result = await searchBookAndAuthorWithAI(q);
+      setAiLookupResult(result);
+    } catch (err: any) {
+      setAiLookupError(err?.message || 'تعذر استكمال البحث بالذكاء الاصطناعي.');
+    } finally {
+      setIsAiLookingUp(false);
+    }
+  };
+
+  const handleApplyAiResultToNewRef = (res: AIBookSearchResult) => {
+    const newRef: Reference = {
+      id: 'ref-' + Date.now(),
+      authorFullName: res.authorFullName,
+      authorFirstName: res.authorFirstName,
+      authorFamilyName: res.authorFamilyName,
+      title: res.title,
+      subtitle: res.subtitle,
+      publisher: res.publisher,
+      publicationPlace: res.publicationPlace,
+      publicationYear: res.publicationYear,
+      edition: res.edition,
+      volume: res.volume,
+      language: res.language,
+      referenceType: res.referenceType,
+      fullCitation: res.fullCitation,
+      keywords: res.keywords,
+      alphabetKey: res.alphabetKey || res.authorFirstName?.charAt(0) || 'أ',
+      categoryIds: [],
+      isFavorite: false,
+      inTrash: false,
+      dateAdded: new Date().toISOString(),
+      lastModified: new Date().toISOString()
+    };
+    setShowAiLookupModal(false);
+    onEditReference(newRef);
+  };
 
   // Quick attach file ref
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -404,6 +464,20 @@ export const MasterCatalogueView: React.FC<MasterCatalogueViewProps> = ({
 
           {/* User-Requested Refresh Button & Export Tools */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* Dedicated AI Book & Author Resolution Button */}
+            <button
+              id="ai-book-lookup-btn"
+              onClick={() => {
+                setShowAiLookupModal(true);
+                setAiLookupError(null);
+              }}
+              className="px-4 py-3 rounded-xl border border-[#8B2635] bg-[#8B2635]/5 hover:bg-[#8B2635]/10 text-[#8B2635] text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-2xs cursor-pointer"
+              title="البحث عن كتاب واستخراج وتدقيق اسم المؤلف كاملاً بالذكاء الاصطناعي"
+            >
+              <Sparkles className="w-4 h-4 text-[#8B2635]" />
+              <span>البحث والتدقيق بالذكاء الاصطناعي (AI)</span>
+            </button>
+
             {/* The Main "تحدث بطلب المستخدم" Button */}
             <button
               id="user-refresh-catalogue-btn"
@@ -412,7 +486,7 @@ export const MasterCatalogueView: React.FC<MasterCatalogueViewProps> = ({
               className={`px-5 py-3 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2.5 cursor-pointer ${
                 isRefreshing
                   ? 'bg-amber-100 text-amber-900 border border-amber-300 cursor-wait'
-                  : 'bg-gradient-to-r from-[#8B2635] to-[#6E1C28] hover:from-[#781E2C] hover:to-[#57141E] text-white active:scale-98 shadow-sm'
+                  : 'bg-linear-to-r from-[#8B2635] to-[#6E1C28] hover:from-[#781E2C] hover:to-[#57141E] text-white active:scale-98 shadow-sm'
               }`}
               title="إعادة فحص وفهرسة جميع أسماء الكتب بناءً على طلب المستخدم"
             >
@@ -1094,6 +1168,231 @@ export const MasterCatalogueView: React.FC<MasterCatalogueViewProps> = ({
 
               <button
                 onClick={() => setShowMemoryModal(false)}
+                className="px-4 py-2 rounded-xl bg-white border border-[#DDD6CA] text-[#475569] font-semibold text-xs hover:bg-[#F3EFE6] cursor-pointer"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Book & Author Verification Modal */}
+      {showAiLookupModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 md:p-6 overflow-y-auto">
+          <div 
+            className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl border border-[#E2DDD3] flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150 text-right"
+            dir="rtl"
+          >
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-linear-to-r from-[#FAF8F5] to-[#F5F0E6] border-b border-[#E2DDD3] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#8B2635] text-white flex items-center justify-center shadow-md">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-[#1F2937]">
+                    البحث الذكي وتدقيق اسم المؤلف بالذكاء الاصطناعي
+                  </h3>
+                  <p className="text-xs text-[#6B7280]">
+                    استخراج الاسم الأكاديمي الكامل وصيغة التوثيق للترتيب الأبجدي بأول اسم المؤلف
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowAiLookupModal(false)}
+                className="p-1.5 text-[#9CA3AF] hover:text-[#1F2937] hover:bg-[#EAE5DC] rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-5 text-xs md:text-sm">
+              <div className="space-y-2">
+                <label className="block font-semibold text-[#374151]">
+                  اكتب اسم الكتاب أو اسم المؤلف أو الصق سطر التوثيق:
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={aiLookupQuery}
+                      onChange={(e) => setAiLookupQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleExecuteAiLookup();
+                        }
+                      }}
+                      placeholder="مثال: Akropolites, G., The History أو Alix, M., Precis أو ابن البيبي: تاريخ سلاجقة الروم..."
+                      className="w-full pl-3 pr-9 py-2.5 bg-white border border-[#C5B79F] rounded-xl text-xs md:text-sm focus:ring-2 focus:ring-[#8B2635] focus:border-transparent outline-none shadow-inner"
+                    />
+                    <Search className="w-4 h-4 text-[#8C7E6C] absolute right-3 top-3" />
+                  </div>
+
+                  <button
+                    onClick={() => handleExecuteAiLookup()}
+                    disabled={isAiLookingUp}
+                    className="px-5 py-2.5 bg-[#8B2635] hover:bg-[#731E2A] disabled:bg-[#9E8B83] text-white font-bold rounded-xl text-xs md:text-sm transition-all flex items-center gap-2 shadow-xs cursor-pointer shrink-0"
+                  >
+                    {isAiLookingUp ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>جارٍ الفحص...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 text-[#E6C687]" />
+                        <span>فحص وتدقيق</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Preset Academic Examples */}
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-medium text-[#6B7280]">أمثلة من مراجع الأطروحة للتحقق السريع:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    'Akropolites, G., The History, Oxford 2007',
+                    'Alix, M., Precis Del Histoire, Paris 1822',
+                    'Bartusis, M. C., The Late Byzantine Army',
+                    'Bratianu, la question de l approvisionnement',
+                    'Brehier, L., Andronic II',
+                    'Burns, Catalan Company',
+                    'ابن البيبي: تاريخ سلاجقة الروم'
+                  ].map((ex, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setAiLookupQuery(ex);
+                        handleExecuteAiLookup(ex);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-[#FAF8F5] hover:bg-[#F0EBE1] border border-[#E5E0D8] text-[11px] text-[#554D41] transition-colors cursor-pointer"
+                    >
+                      {ex}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {aiLookupError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-xl text-xs flex items-center gap-2">
+                  <X className="w-4 h-4 text-red-600 shrink-0" />
+                  <span>{aiLookupError}</span>
+                </div>
+              )}
+
+              {/* Verification Result Card */}
+              {aiLookupResult && (
+                <div className="bg-[#FAF9F5] border-2 border-[#D4C3A3] rounded-2xl p-5 space-y-4 animate-in fade-in zoom-in-98 duration-200">
+                  <div className="flex items-center justify-between flex-wrap gap-2 border-b border-[#E8E1D5] pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
+                      <h4 className="font-bold text-sm text-[#1F2937]">نتيجة التدقيق الببليوجرافي المعتمدة</h4>
+                    </div>
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 font-bold border border-emerald-300">
+                      تم التحقق الأكاديمي
+                    </span>
+                  </div>
+
+                  {/* Scholarly Author Names Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="p-3 bg-white rounded-xl border border-[#E2DDD3]">
+                      <div className="text-[11px] text-[#6B7280]">الاسم الأكاديمي الكامل (صحيح وغير مختصر):</div>
+                      <div className="font-bold text-[#8B2635] text-sm mt-0.5" dir="auto">
+                        {aiLookupResult.authorFullName}
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-white rounded-xl border border-[#E2DDD3]">
+                      <div className="text-[11px] text-[#6B7280]">الاسم الأول (المعتمد للترتيب الهجائي):</div>
+                      <div className="font-bold text-[#1F2937] text-sm mt-0.5" dir="auto">
+                        {aiLookupResult.authorFirstName}
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-white rounded-xl border border-[#E2DDD3]">
+                      <div className="text-[11px] text-[#6B7280]">اسم العائلة / الشهرة:</div>
+                      <div className="font-bold text-[#4B5563] text-sm mt-0.5" dir="auto">
+                        {aiLookupResult.authorFamilyName}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Book Details */}
+                  <div className="p-3 bg-white rounded-xl border border-[#E2DDD3] space-y-2">
+                    <div>
+                      <div className="text-[11px] text-[#6B7280]">عنوان الكتاب أو المصدر:</div>
+                      <div className="font-serif font-bold text-base text-[#1F2937]" dir="auto">
+                        {aiLookupResult.title}
+                        {aiLookupResult.subtitle && (
+                          <span className="text-xs font-normal text-[#6B7280] mr-2">
+                            : {aiLookupResult.subtitle}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs text-[#4B5563]">
+                      <div><strong>دار النشر:</strong> {aiLookupResult.publisher || 'غير محدد'}</div>
+                      <div><strong>المكان:</strong> {aiLookupResult.publicationPlace || 'غير محدد'}</div>
+                      <div><strong>السنة:</strong> {aiLookupResult.publicationYear || 'غير محدد'}</div>
+                      <div><strong>اللغة:</strong> {aiLookupResult.language}</div>
+                    </div>
+                  </div>
+
+                  {/* Author Bio & Relevance if available */}
+                  {aiLookupResult.authorBio && (
+                    <div className="p-3 bg-amber-50/60 border border-amber-200/70 rounded-xl text-xs space-y-1 text-amber-950 leading-relaxed">
+                      <strong>نبذة تاريخية عن المؤلف والمصدر:</strong>
+                      <p>{aiLookupResult.authorBio}</p>
+                    </div>
+                  )}
+
+                  {/* Full Scholarly Citation */}
+                  <div className="p-3 bg-white rounded-xl border border-[#E2DDD3] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-[#6B7280]">صيغة التوثيق الأكاديمي المعتمدة (شيكاغو / هارفارد):</span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(aiLookupResult.fullCitation);
+                          setCopiedAiCitation(true);
+                          setTimeout(() => setCopiedAiCitation(false), 2000);
+                        }}
+                        className="text-xs text-[#8B2635] hover:underline flex items-center gap-1 font-bold cursor-pointer"
+                      >
+                        {copiedAiCitation ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedAiCitation ? 'تم النسخ!' : 'نسخ التوثيق'}</span>
+                      </button>
+                    </div>
+                    <div className="p-2.5 bg-[#FAF9F5] rounded-lg font-serif text-xs text-[#1F2937] leading-relaxed select-all" dir="auto">
+                      {aiLookupResult.fullCitation}
+                    </div>
+                  </div>
+
+                  {/* Modal Action Buttons */}
+                  <div className="pt-2 flex items-center justify-end gap-3">
+                    <button
+                      onClick={() => handleApplyAiResultToNewRef(aiLookupResult)}
+                      className="px-5 py-2.5 bg-[#8B2635] hover:bg-[#731E2A] text-white font-bold rounded-xl text-xs md:text-sm flex items-center gap-2 shadow-sm cursor-pointer"
+                    >
+                      <BookOpen className="w-4 h-4" />
+                      <span>إضافة وتثبيت المرجع في الفهرس</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-[#E2DDD3] bg-[#FAF9F5] flex items-center justify-end">
+              <button
+                onClick={() => setShowAiLookupModal(false)}
                 className="px-4 py-2 rounded-xl bg-white border border-[#DDD6CA] text-[#475569] font-semibold text-xs hover:bg-[#F3EFE6] cursor-pointer"
               >
                 إغلاق

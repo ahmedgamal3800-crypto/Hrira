@@ -1,4 +1,4 @@
-export type LanguageType = 'العربية' | 'English' | 'Français' | 'Greek' | 'Deutsch' | 'Latin' | 'أخرى';
+export type LanguageType = 'العربية' | 'English' | 'Français' | 'Greek' | 'Deutsch' | 'Latin' | 'Türkçe' | 'Español' | 'Italiano' | 'أخرى';
 
 export type ReferenceType = 
   | 'كتاب (Book)'
@@ -8,6 +8,7 @@ export type ReferenceType =
   | 'مصدر أصلي / مخطوط (Primary Source)'
   | 'وثيقة أرشيفية (Archival Document)'
   | 'فصل في كتاب (Book Section)'
+  | 'موسوعة أو معجم (Encyclopedia)'
   | 'بحث مؤتمر (Conference Paper)';
 
 export type SortRule = 
@@ -92,6 +93,9 @@ export interface Reference {
   edition?: string;           // الطبعة
   volume?: string;            // الجزء / المجلد
   pages?: string;             // الصفحات (e.g. 120-145 or 450 ص)
+  translatorOrEditor?: string;// المترجم أو المحقق أو المحرر
+  authorBio?: string;         // نبذة أكاديمية عن المؤلف
+  historicalRelevance?: string; // الأهمية التاريخية للأطروحة
   
   // Identifiers
   isbn?: string;              // ISBN إن وجد

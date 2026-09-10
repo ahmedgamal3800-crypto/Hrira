@@ -9,13 +9,17 @@ import {
   Check, 
   AlertCircle,
   HelpCircle,
-  FolderTree
+  FolderTree,
+  Search,
+  Loader2,
+  Bot
 } from 'lucide-react';
 import { Reference, ReferenceType, LanguageType, CategoryItem, ReferenceFile } from '../types';
 import { getAlphabetKey } from '../services/alphabet';
 import { generateSuggestedCitation } from '../services/citationFormatter';
 import { dbService } from '../services/db';
 import { extractMetadataFromBookFile } from '../services/bookMetadataExtractor';
+import { searchBookAndAuthorWithAI } from '../services/aiBookService';
 
 interface ReferenceFormModalProps {
   reference?: Reference | null;
@@ -64,6 +68,51 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
 
   // Suggested citation notice
   const [citationGeneratedNotice, setCitationGeneratedNotice] = useState(false);
+
+  // AI Book Search & Author Name Verification State
+  const [aiSearchInput, setAiSearchInput] = useState('');
+  const [isAiSearching, setIsAiSearching] = useState(false);
+  const [aiSearchError, setAiSearchError] = useState<string | null>(null);
+  const [aiSuccessNotice, setAiSuccessNotice] = useState<string | null>(null);
+
+  const handleAiSearchBook = async () => {
+    if (!aiSearchInput.trim()) {
+      setAiSearchError('يرجى كتابة اسم الكتاب أو المؤلف أو نص التوثيق أولاً للبحث.');
+      return;
+    }
+    setIsAiSearching(true);
+    setAiSearchError(null);
+    setAiSuccessNotice(null);
+
+    try {
+      const result = await searchBookAndAuthorWithAI(aiSearchInput.trim());
+      if (result.found) {
+        if (result.authorFullName) setAuthorFullName(result.authorFullName);
+        if (result.authorFirstName) setAuthorFirstName(result.authorFirstName);
+        if (result.authorFamilyName) setAuthorFamilyName(result.authorFamilyName);
+        if (result.title) setTitle(result.title);
+        if (result.subtitle) setSubtitle(result.subtitle);
+        if (result.publisher) setPublisher(result.publisher);
+        if (result.publicationPlace) setPublicationPlace(result.publicationPlace);
+        if (result.publicationYear) setPublicationYear(result.publicationYear);
+        if (result.edition) setEdition(result.edition);
+        if (result.volume) setVolume(result.volume);
+        if (result.language) setLanguage(result.language);
+        if (result.referenceType) setReferenceType(result.referenceType);
+        if (result.fullCitation) setFullCitation(result.fullCitation);
+        if (result.keywords && result.keywords.length > 0) {
+          setKeywords(prev => Array.from(new Set([...prev, ...result.keywords])));
+        }
+        setAiSuccessNotice(`تم التحقق بنجاح من المرجع! اسم المؤلف الكامل: ${result.authorFullName}`);
+      } else {
+        setAiSearchError('لم يتم العثور على نتائج دقيقة لهذا المرجع.');
+      }
+    } catch (err: any) {
+      setAiSearchError(err?.message || 'حدث خطأ أثناء فحص وتدقيق الكتاب بالذكاء الاصطناعي.');
+    } finally {
+      setIsAiSearching(false);
+    }
+  };
 
   useEffect(() => {
     if (reference) {
@@ -396,6 +445,111 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
               )}
             </div>
           )}
+
+          {/* AI Book Search & Author Name Verification Tool */}
+          <div className="bg-linear-to-r from-[#FBF8F3] to-[#F5F0E6] border-2 border-[#D4C3A3] rounded-2xl p-4 md:p-5 shadow-xs space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2 text-[#7D2433] font-bold text-sm">
+                <div className="p-1.5 bg-[#7D2433] text-white rounded-lg shadow-xs">
+                  <Bot className="w-4 h-4" />
+                </div>
+                <span>البحث عن الكتاب وتدقيق اسم المؤلف بالذكاء الاصطناعي</span>
+              </div>
+              <span className="text-[11px] bg-[#7D2433]/10 text-[#7D2433] px-2.5 py-1 rounded-full font-semibold">
+                استخراج الاسم الكامل والموثق آلياً
+              </span>
+            </div>
+
+            <p className="text-xs text-[#5D5548] leading-relaxed">
+              اكتب أو الصق اسم الكتاب أو المؤلف أو التوثيق الخام (مثل: <span className="font-mono text-[#7D2433] font-medium" dir="ltr">Akropolites, G., The History</span> أو <span className="font-mono text-[#7D2433] font-medium" dir="ltr">Alix, Precis</span> أو <span className="font-medium text-[#7D2433]">ابن البيبي: تاريخ سلاجقة الروم</span>)، وسيقوم الذكاء الاصطناعي بالبحث والتحقق واستخراج اسم المؤلف الرباعي/الكامل وصيغة التوثيق المعتمدة وتعبئة الحقول آلياً:
+            </p>
+
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={aiSearchInput}
+                  onChange={(e) => setAiSearchInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAiSearchBook();
+                    }
+                  }}
+                  placeholder="اكتب اسم الكتاب أو نص التوثيق هنا للبحث والتدقيق..."
+                  className="w-full pl-3 pr-9 py-2.5 bg-white border border-[#C5B79F] rounded-xl text-xs md:text-sm focus:ring-2 focus:ring-[#7D2433] focus:border-transparent outline-none shadow-inner"
+                />
+                <Search className="w-4 h-4 text-[#8C7E6C] absolute right-3 top-3" />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAiSearchBook}
+                disabled={isAiSearching}
+                className="px-4 py-2.5 bg-[#7D2433] hover:bg-[#631B27] disabled:bg-[#9E8B83] text-white font-bold rounded-xl text-xs md:text-sm transition-all flex items-center gap-2 shadow-xs cursor-pointer shrink-0"
+              >
+                {isAiSearching ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>جارٍ البحث والتدقيق...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 text-[#E6C687]" />
+                    <span>تدقيق وتعبئة ذكية</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Quick pre-set examples */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] text-[#6B7280]">
+              <span className="font-medium text-[#4B5563]">أمثلة سريعة للتجربة:</span>
+              {[
+                'Akropolites, G., The History',
+                'Bartusis, The Late Byzantine Army',
+                'Burns, Catalan Company',
+                'ابن البيبي: تاريخ سلاجقة الروم',
+                'العاشق باشا زاده'
+              ].map((example, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setAiSearchInput(example);
+                  }}
+                  className="bg-white/80 hover:bg-white border border-[#D9CEBA] px-2 py-0.5 rounded-md text-[#5D5548] hover:text-[#7D2433] transition-colors cursor-pointer"
+                >
+                  {example}
+                </button>
+              ))}
+            </div>
+
+            {/* AI Error Alert */}
+            {aiSearchError && (
+              <div className="bg-red-50 border border-red-200 text-red-800 text-xs p-3 rounded-xl flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+                <span>{aiSearchError}</span>
+              </div>
+            )}
+
+            {/* AI Success Notice */}
+            {aiSuccessNotice && (
+              <div className="bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs p-3 rounded-xl flex items-center justify-between gap-2 animate-in fade-in duration-200">
+                <div className="flex items-center gap-2 font-medium">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{aiSuccessNotice}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAiSuccessNotice(null)}
+                  className="text-emerald-700 hover:text-emerald-900 p-0.5"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Section 1: Authorship Fields (Strict Separation) */}
           <div className="bg-[#FAF8F3] border border-[#E9E3D6] rounded-xl p-4 space-y-3">

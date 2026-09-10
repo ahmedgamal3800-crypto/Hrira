@@ -12,7 +12,7 @@ import {
 import { getAlphabetKey } from './alphabet';
 import { SEED_REFERENCES_LIST } from '../data/seedReferences';
 
-const DB_NAME = 'HurairahAcademicLibraryDB';
+const DB_NAME = 'HurairahAcademicLibraryDB_v5';
 const DB_VERSION = 1;
 
 export const DEFAULT_TOOL_MEMORY: ToolMemoryState = {
@@ -172,9 +172,9 @@ class AcademicDatabase {
         const countReq = refStore.count();
 
         countReq.onsuccess = () => {
-          // If database is empty or has old incomplete sample data (< 50 items)
-          if (countReq.result < 50) {
-            // Clear any old sample references and load the full 114 references
+          // If database is empty or has old incomplete sample data (< 204 items)
+          if (countReq.result < 204) {
+            // Clear any old sample references and load the full 204 scholarly references
             refStore.clear();
             INITIAL_REFERENCES.forEach((ref) => refStore.put(ref));
 

@@ -3,14 +3,15 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
+import { serverStorage } from './src/server/storage';
 
 dotenv.config();
 
 const app = express();
 const PORT = 3000;
 
-app.use(express.json({ limit: '15mb' }));
-app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+app.use(express.json({ limit: '60mb' }));
+app.use(express.urlencoded({ extended: true, limit: '60mb' }));
 
 // Lazy initialization of Gemini client
 let aiClient: GoogleGenAI | null = null;
@@ -702,6 +703,142 @@ app.post('/api/ai-book-search', async (req, res) => {
     // cleanly resolve using the local academic bibliographic knowledge base
     const fallbackResult = resolveScholarlyBook(searchQuery);
     return res.json(fallbackResult);
+  }
+});
+
+// =========================================================================
+// Academic Library Server Persistence & Real-time Synchronization Endpoints
+// =========================================================================
+
+// 1. Sync / Fetch all merged references (Seed + User Additions + User Edits)
+app.get('/api/storage/sync', (req, res) => {
+  try {
+    const references = serverStorage.getAllMergedReferences();
+    const stats = serverStorage.getStats();
+    res.json({
+      success: true,
+      references,
+      stats,
+      serverTime: new Date().toISOString()
+    });
+  } catch (err: any) {
+    console.error('Error in /api/storage/sync GET:', err);
+    res.status(500).json({ error: 'فشل مزامنة مراجع المكتبة من خادم التخزين الدائم' });
+  }
+});
+
+// 2. Sync client updates into the persistent server store
+app.post('/api/storage/sync', (req, res) => {
+  try {
+    const { references } = req.body || {};
+    if (!Array.isArray(references)) {
+      return res.status(400).json({ error: 'قائمة المراجع غير صالحة' });
+    }
+    const result = serverStorage.syncWithClient(references);
+    res.json({
+      success: true,
+      savedCount: result.savedCount,
+      totalCount: result.mergedReferences.length,
+      references: result.mergedReferences
+    });
+  } catch (err: any) {
+    console.error('Error in /api/storage/sync POST:', err);
+    res.status(500).json({ error: 'فشل حفظ مزامنة المراجع على الخادم' });
+  }
+});
+
+// 3. Save or update a single reference immediately on the server
+app.post('/api/storage/reference', (req, res) => {
+  try {
+    const { reference } = req.body || {};
+    if (!reference || !reference.id || !reference.title) {
+      return res.status(400).json({ error: 'بيانات المرجع غير مكتملة' });
+    }
+    const saved = serverStorage.saveReference(reference);
+    res.json({ success: true, reference: saved });
+  } catch (err: any) {
+    console.error('Error in /api/storage/reference POST:', err);
+    res.status(500).json({ error: 'فشل حفظ المرجع على خادم التخزين الدائم' });
+  }
+});
+
+// 4. Delete or move to trash a reference on the server
+app.delete('/api/storage/reference/:id', (req, res) => {
+  try {
+    const id = req.params.id;
+    const permanent = req.query.permanent === 'true';
+    serverStorage.deleteReference(id, permanent);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error('Error in /api/storage/reference DELETE:', err);
+    res.status(500).json({ error: 'فشل حذف المرجع من الخادم' });
+  }
+});
+
+// 5. Upload an attached book file (PDF, doc) directly to persistent server storage
+app.post('/api/storage/upload', (req, res) => {
+  try {
+    const { id, name, type, base64 } = req.body || {};
+    if (!id || !name || !base64) {
+      return res.status(400).json({ error: 'بيانات الملف المرفوع غير مكتملة (المعرف، الاسم، أو محتوى الملف)' });
+    }
+    const record = serverStorage.saveUploadedFile(id, name, type, base64);
+    res.json({
+      success: true,
+      file: {
+        id: record.id,
+        name: record.name,
+        type: record.type,
+        size: record.size,
+        url: `/api/storage/files/${record.id}`
+      }
+    });
+  } catch (err: any) {
+    console.error('Error in /api/storage/upload POST:', err);
+    res.status(500).json({ error: 'فشل حفظ الملف المرفق في مجلد التخزين الدائم' });
+  }
+});
+
+// 6. Download / Stream an attached book file from the server
+app.get('/api/storage/files/:id', (req, res) => {
+  try {
+    const id = req.params.id;
+    const fileInfo = serverStorage.getUploadedFilePath(id);
+    if (!fileInfo) {
+      return res.status(404).json({ error: 'الملف غير موجود في الخادم' });
+    }
+    if (fileInfo.manifest) {
+      res.setHeader('Content-Type', fileInfo.manifest.type || 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename*=UTF-8\'\'${encodeURIComponent(fileInfo.manifest.name)}`);
+    } else {
+      res.setHeader('Content-Type', 'application/pdf');
+    }
+    res.sendFile(fileInfo.filePath);
+  } catch (err: any) {
+    console.error('Error in /api/storage/files/:id GET:', err);
+    res.status(500).json({ error: 'فشل تحميل الملف من الخادم' });
+  }
+});
+
+// 7. Delete an attached book file from the server
+app.delete('/api/storage/files/:id', (req, res) => {
+  try {
+    const id = req.params.id;
+    const deleted = serverStorage.deleteUploadedFile(id);
+    res.json({ success: true, deleted });
+  } catch (err: any) {
+    console.error('Error in /api/storage/files/:id DELETE:', err);
+    res.status(500).json({ error: 'فشل حذف الملف من الخادم' });
+  }
+});
+
+// 8. Storage stats & persistence health
+app.get('/api/storage/stats', (req, res) => {
+  try {
+    const stats = serverStorage.getStats();
+    res.json({ success: true, stats });
+  } catch (err: any) {
+    res.status(500).json({ error: 'فشل جلب إحصائيات التخزين' });
   }
 });
 

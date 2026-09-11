@@ -172,15 +172,12 @@ class AcademicDatabase {
         const countReq = refStore.count();
 
         countReq.onsuccess = () => {
-          // If database is empty or has fewer items than INITIAL_REFERENCES
-          if (countReq.result < INITIAL_REFERENCES.length) {
-            // Clear old sample references and load the full scholarly references
-            refStore.clear();
+          // If database is completely empty (first time open):
+          if (countReq.result === 0) {
             INITIAL_REFERENCES.forEach((ref) => refStore.put(ref));
 
             // Seed categories
             const catStore = tx.objectStore('categories');
-            catStore.clear();
             INITIAL_CATEGORIES.forEach((cat) => catStore.put(cat));
 
             // Seed citations
@@ -194,6 +191,16 @@ class AcademicDatabase {
             // Seed settings
             const setStore = tx.objectStore('settings');
             setStore.put({ key: 'main', value: DEFAULT_SETTINGS });
+          } else {
+            // NEVER clear! Add missing seed references without overwriting user custom additions
+            INITIAL_REFERENCES.forEach((seedRef) => {
+              const check = refStore.get(seedRef.id);
+              check.onsuccess = () => {
+                if (!check.result) {
+                  refStore.put(seedRef);
+                }
+              };
+            });
           }
         };
 
@@ -206,15 +213,24 @@ class AcademicDatabase {
     });
   }
 
-  // Public seed method
+  // Public seed method - safe non-destructive synchronization
   async seedInitialData(): Promise<void> {
     const db = await this.dbPromise;
     const tx = db.transaction(['references', 'categories', 'citations', 'notes', 'settings'], 'readwrite');
     const refStore = tx.objectStore('references');
-    refStore.clear();
-    INITIAL_REFERENCES.forEach((ref) => refStore.put(ref));
+    
+    // Non-destructive: put seed references while preserving user-added custom references
+    INITIAL_REFERENCES.forEach((ref) => {
+      const getReq = refStore.get(ref.id);
+      getReq.onsuccess = () => {
+        // Only replace if no user file is attached to preserve attachments
+        if (!getReq.result || !getReq.result.file) {
+          refStore.put(ref);
+        }
+      };
+    });
+    
     const catStore = tx.objectStore('categories');
-    catStore.clear();
     INITIAL_CATEGORIES.forEach((cat) => catStore.put(cat));
     const citStore = tx.objectStore('citations');
     INITIAL_QUOTES.forEach((q) => citStore.put(q));
@@ -234,6 +250,74 @@ class AcademicDatabase {
     const db = await this.dbPromise;
     const tx = db.transaction(storeName, mode);
     return tx.objectStore(storeName);
+  }
+
+  private isSyncing = false;
+
+  // Real-time synchronization with persistent server storage
+  async syncWithServer(): Promise<void> {
+    if (this.isSyncing) return;
+    this.isSyncing = true;
+    try {
+      // 1. Fetch server state
+      const res = await fetch('/api/storage/sync');
+      if (!res.ok) return;
+      const data = await res.json();
+      const serverRefs: Reference[] = data.references || [];
+      if (!serverRefs.length) return;
+
+      const store = await this.getStore('references', 'readwrite');
+      const allLocalReq = store.getAll();
+
+      allLocalReq.onsuccess = () => {
+        const localRefs: Reference[] = allLocalReq.result || [];
+        const localMap = new Map<string, Reference>();
+        localRefs.forEach((r) => localMap.set(r.id, r));
+
+        const clientModsToPushToServer: Reference[] = [];
+
+        // Check server refs
+        for (const sRef of serverRefs) {
+          const lRef = localMap.get(sRef.id);
+          if (!lRef) {
+            // Local doesn't have this book, save to IndexedDB
+            store.put(sRef);
+          } else {
+            // Both have it: compare lastModified
+            const sTime = new Date(sRef.lastModified || 0).getTime();
+            const lTime = new Date(lRef.lastModified || 0).getTime();
+            if (sTime > lTime) {
+              const merged = { ...sRef, file: lRef.file || sRef.file };
+              store.put(merged);
+            } else if (lTime > sTime) {
+              clientModsToPushToServer.push(lRef);
+            }
+          }
+        }
+
+        // Check if client has custom books or edits not yet on server
+        const serverMap = new Map<string, Reference>();
+        serverRefs.forEach((r) => serverMap.set(r.id, r));
+        for (const lRef of localRefs) {
+          if (!serverMap.has(lRef.id)) {
+            clientModsToPushToServer.push(lRef);
+          }
+        }
+
+        // Push client books/edits to server storage
+        if (clientModsToPushToServer.length > 0) {
+          fetch('/api/storage/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ references: clientModsToPushToServer })
+          }).catch(() => {});
+        }
+      };
+    } catch {
+      // Offline fallback
+    } finally {
+      this.isSyncing = false;
+    }
   }
 
   // References
@@ -260,6 +344,9 @@ class AcademicDatabase {
             }
           }
         });
+
+        // Trigger two-way background sync with server persistent storage
+        this.syncWithServer().catch(() => {});
 
         const normalized = raw.map((r: Reference) => ({
           ...r,
@@ -308,12 +395,27 @@ class AcademicDatabase {
     const store = await this.getStore('references', 'readwrite');
     return new Promise((resolve, reject) => {
       const req = store.put(updatedRef);
-      req.onsuccess = () => resolve(updatedRef);
+      req.onsuccess = () => {
+        // Asynchronously persist to backend server storage
+        fetch('/api/storage/reference', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reference: updatedRef, reason: note })
+        }).catch((err) => {
+          console.warn('Persistent server sync notice:', err);
+        });
+        resolve(updatedRef);
+      };
       req.onerror = () => reject(req.error);
     });
   }
 
   async deleteReference(id: string, permanent = false): Promise<void> {
+    // Notify server of deletion
+    fetch(`/api/storage/reference/${id}?permanent=${permanent}`, {
+      method: 'DELETE'
+    }).catch(() => {});
+
     if (permanent) {
       const store = await this.getStore('references', 'readwrite');
       return new Promise((resolve, reject) => {
@@ -385,23 +487,87 @@ class AcademicDatabase {
       record = fileRecordOrId;
     }
 
-    return new Promise((resolve, reject) => {
+    // 1. Save to local IndexedDB for immediate client-side offline access
+    await new Promise<void>((resolve, reject) => {
       const req = store.put(record);
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
     });
+
+    // 2. Stream/Upload to persistent server storage so files survive updates and reloads
+    try {
+      const fileId = record.id;
+      const fileName = record.name;
+      const fileType = record.type;
+      const fileSize = record.size;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        fetch('/api/storage/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: fileId,
+            name: fileName,
+            type: fileType,
+            size: fileSize,
+            base64
+          })
+        }).catch((e) => console.warn('Persistent file backup warning:', e));
+      };
+      reader.readAsDataURL(record.blob);
+    } catch (e) {
+      console.warn('File read for server backup warning:', e);
+    }
   }
 
   async getFile(id: string): Promise<{ id: string; name: string; type: string; size: number; blob: Blob } | undefined> {
     const store = await this.getStore('files');
-    return new Promise((resolve, reject) => {
+    const local = await new Promise<{ id: string; name: string; type: string; size: number; blob: Blob } | undefined>((resolve) => {
       const req = store.get(id);
       req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
+      req.onerror = () => resolve(undefined);
     });
+
+    if (local?.blob) {
+      return local;
+    }
+
+    // If not found in IndexedDB (e.g. cache cleared, new device, or app update), fetch from server persistent storage!
+    try {
+      const resp = await fetch(`/api/storage/files/${id}`);
+      if (resp.ok) {
+        const blob = await resp.blob();
+        const disposition = resp.headers.get('content-disposition');
+        let fileName = 'document.pdf';
+        if (disposition && disposition.includes('filename*=')) {
+          const match = disposition.match(/filename\*=UTF-8\'\'([^;]+)/i);
+          if (match) fileName = decodeURIComponent(match[1]);
+        }
+        const fileRecord = {
+          id,
+          name: fileName,
+          type: blob.type || 'application/pdf',
+          size: blob.size,
+          blob
+        };
+        // Re-cache locally in IndexedDB
+        const writeStore = await this.getStore('files', 'readwrite');
+        writeStore.put(fileRecord);
+        return fileRecord;
+      }
+    } catch (err) {
+      console.warn('Could not fetch file from server storage:', err);
+    }
+    return undefined;
   }
 
   async deleteFile(id: string): Promise<void> {
+    // Notify server to delete file from persistent disk
+    fetch(`/api/storage/files/${id}`, {
+      method: 'DELETE'
+    }).catch(() => {});
+
     const store = await this.getStore('files', 'readwrite');
     return new Promise((resolve, reject) => {
       const req = store.delete(id);

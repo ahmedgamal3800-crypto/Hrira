@@ -172,9 +172,9 @@ class AcademicDatabase {
         const countReq = refStore.count();
 
         countReq.onsuccess = () => {
-          // If database is empty or has old incomplete sample data (< 204 items)
-          if (countReq.result < 204) {
-            // Clear any old sample references and load the full 204 scholarly references
+          // If database is empty or has fewer items than INITIAL_REFERENCES
+          if (countReq.result < INITIAL_REFERENCES.length) {
+            // Clear old sample references and load the full scholarly references
             refStore.clear();
             INITIAL_REFERENCES.forEach((ref) => refStore.put(ref));
 
@@ -242,7 +242,25 @@ class AcademicDatabase {
     return new Promise((resolve, reject) => {
       const req = store.getAll();
       req.onsuccess = () => {
-        const raw = req.result || [];
+        const raw: Reference[] = req.result || [];
+        const existingIds = new Set(raw.map((r) => r.id));
+
+        // Synchronize any newly added seed references (e.g. ref-for-75-b)
+        INITIAL_REFERENCES.forEach((seedRef) => {
+          if (!existingIds.has(seedRef.id)) {
+            raw.push(seedRef);
+            this.saveReference(seedRef, 'مزامنة مراجع الفهرس المعتمد').catch(() => {});
+          } else if (seedRef.id === 'ref-for-75') {
+            const current = raw.find(r => r.id === 'ref-for-75');
+            if (current && !current.fullCitation.includes('P. 20')) {
+              current.fullCitation = seedRef.fullCitation;
+              current.pages = seedRef.pages;
+              current.alphabetKey = 'M';
+              this.saveReference(current, 'تحديث بيانات توثيق المرجع وصفحاته').catch(() => {});
+            }
+          }
+        });
+
         const normalized = raw.map((r: Reference) => ({
           ...r,
           alphabetKey: getAlphabetKey(r)

@@ -409,6 +409,7 @@ export default function App() {
               onAttachBook={handleAttachBookToRef}
               onDownloadFile={handleDownloadFile}
               onSearchEvidence={handleOpenEvidenceSearch}
+              onSaveReference={handleSaveReference}
               settings={settings}
             />
           ) : (activeTab === 'search' || activeTab === 'advanced_search') ? (

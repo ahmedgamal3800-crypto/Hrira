@@ -62,7 +62,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onSelectTab('library');
               }
             }}
-            placeholder="بحث فوري في العناوين، أسماء المؤلفين، الكلمات المفتاحية، أو نصوص الاقتباس..."
+            placeholder="بحث موحد: باسم الكتاب، أو اسم المؤلف، أو اسم الجد / العائلة، أو نص التوثيق..."
             className="w-full pl-3 pr-9 py-2 bg-white border border-[#DDD6CA] rounded-lg text-xs md:text-sm text-[#1F2937] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#7D2433] focus:border-transparent transition-all shadow-2xs"
           />
           {searchQuery && (

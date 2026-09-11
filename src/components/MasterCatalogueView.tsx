@@ -27,12 +27,14 @@ import {
 } from 'lucide-react';
 import { Reference, CategoryItem, ToolMemoryState, AppSettings } from '../types';
 import { searchBookAndAuthorWithAI, AIBookSearchResult } from '../services/aiBookService';
+import { matchesReferenceSearch } from '../services/searchUtils';
 import { 
   getCanonicalBookSortKey, 
   getCanonicalBookLetter, 
   compareCanonicalLetters,
   getAuthorFirstNameSortKey,
   getAuthorFirstNameLetter,
+  getAuthorCanonicalLetter,
   cleanLeadingSymbols,
   normalizeArabicChar,
   ARABIC_LETTERS 
@@ -50,6 +52,7 @@ interface MasterCatalogueViewProps {
   onAttachBook?: (ref: Reference, file: File) => void;
   onDownloadFile?: (ref: Reference) => void;
   onSearchEvidence?: (ref: Reference) => void;
+  onSaveReference?: (ref: Reference, fileBlob?: Blob, reason?: string) => Promise<void>;
   settings: AppSettings;
 }
 
@@ -65,6 +68,7 @@ export const MasterCatalogueView: React.FC<MasterCatalogueViewProps> = ({
   onAttachBook,
   onDownloadFile,
   onSearchEvidence,
+  onSaveReference,
   settings
 }) => {
   // State for user-requested update
@@ -96,6 +100,27 @@ export const MasterCatalogueView: React.FC<MasterCatalogueViewProps> = ({
   const [aiLookupResult, setAiLookupResult] = useState<AIBookSearchResult | null>(null);
   const [aiLookupError, setAiLookupError] = useState<string | null>(null);
   const [copiedAiCitation, setCopiedAiCitation] = useState(false);
+  const [isSavingAiRef, setIsSavingAiRef] = useState(false);
+
+  // Derives the academic classification letter: Latin references by Family Name, Arabic by First Name
+  const getDerivedKey = (res: AIBookSearchResult): string => {
+    if (res.alphabetKey && res.alphabetKey.trim()) return res.alphabetKey.trim();
+    const isLatin = /^[A-Za-z\u00C0-\u024F]/.test(
+      (res.authorFamilyName || res.authorFullName || res.authorFirstName || res.title || '').trim()
+    );
+    if (isLatin) {
+      if (res.authorFamilyName && res.authorFamilyName.trim()) {
+        return res.authorFamilyName.trim().charAt(0).toUpperCase();
+      }
+      if (res.authorFullName && res.authorFullName.trim()) {
+        const full = res.authorFullName.trim();
+        const parts = full.split(/[,\s]+/);
+        return parts[0].charAt(0).toUpperCase();
+      }
+      return res.authorFirstName?.charAt(0).toUpperCase() || 'A';
+    }
+    return res.authorFirstName?.charAt(0) || 'أ';
+  };
 
   const handleExecuteAiLookup = async (queryText?: string) => {
     const q = (queryText || aiLookupQuery).trim();
@@ -117,7 +142,10 @@ export const MasterCatalogueView: React.FC<MasterCatalogueViewProps> = ({
     }
   };
 
-  const handleApplyAiResultToNewRef = (res: AIBookSearchResult) => {
+  // Direct save to library with instant indexing and refresh
+  const handleSaveAiResultDirectlyToLibrary = async (res: AIBookSearchResult) => {
+    const calcKey = getDerivedKey(res);
+
     const newRef: Reference = {
       id: 'ref-' + Date.now(),
       authorFullName: res.authorFullName,
@@ -130,11 +158,58 @@ export const MasterCatalogueView: React.FC<MasterCatalogueViewProps> = ({
       publicationYear: res.publicationYear,
       edition: res.edition,
       volume: res.volume,
+      pages: res.pages,
       language: res.language,
       referenceType: res.referenceType,
       fullCitation: res.fullCitation,
-      keywords: res.keywords,
-      alphabetKey: res.alphabetKey || res.authorFirstName?.charAt(0) || 'أ',
+      keywords: res.keywords || [],
+      alphabetKey: calcKey,
+      categoryIds: [],
+      isFavorite: false,
+      inTrash: false,
+      dateAdded: new Date().toISOString(),
+      lastModified: new Date().toISOString()
+    };
+
+    if (onSaveReference) {
+      try {
+        setIsSavingAiRef(true);
+        await onSaveReference(newRef, undefined, `إضافة وتحديث فوري للمرجع من الفحص الأكاديمي: ${res.authorFullName}`);
+        setShowAiLookupModal(false);
+        setAiLookupResult(null);
+        setRefreshSuccessMessage(`تمت إضافة وتوثيق كتاب «${res.title}» للمؤلف (${res.authorFullName}) وتصنيفه تحت حرف [${calcKey}] وتحديث المكتبة بنجاح!`);
+        setTimeout(() => setRefreshSuccessMessage(null), 6000);
+      } catch (err) {
+        console.error('Failed to direct-save reference', err);
+        handleApplyAiResultToNewRef(res);
+      } finally {
+        setIsSavingAiRef(false);
+      }
+    } else {
+      handleApplyAiResultToNewRef(res);
+    }
+  };
+
+  const handleApplyAiResultToNewRef = (res: AIBookSearchResult) => {
+    const calcKey = getDerivedKey(res);
+    const newRef: Reference = {
+      id: 'ref-' + Date.now(),
+      authorFullName: res.authorFullName,
+      authorFirstName: res.authorFirstName,
+      authorFamilyName: res.authorFamilyName,
+      title: res.title,
+      subtitle: res.subtitle,
+      publisher: res.publisher,
+      publicationPlace: res.publicationPlace,
+      publicationYear: res.publicationYear,
+      edition: res.edition,
+      volume: res.volume,
+      pages: res.pages,
+      language: res.language,
+      referenceType: res.referenceType,
+      fullCitation: res.fullCitation,
+      keywords: res.keywords || [],
+      alphabetKey: calcKey,
       categoryIds: [],
       isFavorite: false,
       inTrash: false,
@@ -168,17 +243,9 @@ export const MasterCatalogueView: React.FC<MasterCatalogueViewProps> = ({
       if (hasFileFilter === 'without_file' && (ref.file?.id || ref.file?.name)) {
         return false;
       }
-      // Search query
+      // Search query: unified matching by author first name, grandfather name, book title, citation, or keywords
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const matchTitle = ref.title.toLowerCase().includes(q) || (ref.subtitle || '').toLowerCase().includes(q);
-        const matchAuthor = (ref.authorFullName || '').toLowerCase().includes(q) ||
-                            (ref.authorFamilyName || '').toLowerCase().includes(q) ||
-                            (ref.authorFirstName || '').toLowerCase().includes(q);
-        const matchPublisher = (ref.publisher || '').toLowerCase().includes(q);
-        const matchYear = (ref.publicationYear || '').includes(q);
-        const matchKeywords = (ref.keywords || []).some(kw => kw.toLowerCase().includes(q));
-        if (!matchTitle && !matchAuthor && !matchPublisher && !matchYear && !matchKeywords) {
+        if (!matchesReferenceSearch(ref, searchQuery)) {
           return false;
         }
       }
@@ -200,7 +267,9 @@ export const MasterCatalogueView: React.FC<MasterCatalogueViewProps> = ({
       } else {
         const keyA = cleanLeadingSymbols(a.authorFamilyName || a.authorFullName || a.title);
         const keyB = cleanLeadingSymbols(b.authorFamilyName || b.authorFullName || b.title);
-        return keyA.localeCompare(keyB, ['ar', 'en'], { sensitivity: 'base', numeric: true });
+        const cmp = keyA.localeCompare(keyB, ['ar', 'en'], { sensitivity: 'base', numeric: true });
+        if (cmp !== 0) return cmp;
+        return a.title.localeCompare(b.title, ['ar', 'en']);
       }
     });
 
@@ -218,8 +287,7 @@ export const MasterCatalogueView: React.FC<MasterCatalogueViewProps> = ({
       } else if (sortMethod === 'book_title') {
         letter = getCanonicalBookLetter(ref.title, stripArticle);
       } else {
-        const key = cleanLeadingSymbols(ref.authorFamilyName || ref.authorFullName || ref.title);
-        letter = key ? normalizeArabicChar(key.charAt(0)) : '#';
+        letter = getAuthorCanonicalLetter(ref, stripArticle);
       }
       if (!map.has(letter)) {
         map.set(letter, []);
@@ -565,7 +633,7 @@ export const MasterCatalogueView: React.FC<MasterCatalogueViewProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ابحث في أسماء الكتب، المؤلفين، الكلمات المفتاحية..."
+              placeholder="ابحث باسم الكتاب، أو اسم المؤلف، أو اسم الجد / العائلة، أو نص التوثيق..."
               className="w-full pr-10 pl-4 py-2.5 rounded-xl border border-[#DDD6CA] text-xs text-[#1F2937] placeholder-[#94A3B8] focus:border-[#8B2635] focus:outline-hidden bg-[#FAF9F5]"
             />
             {searchQuery && (
@@ -621,8 +689,8 @@ export const MasterCatalogueView: React.FC<MasterCatalogueViewProps> = ({
                 onChange={(e) => setSortMethod(e.target.value as any)}
                 className="px-2.5 py-1.5 rounded-lg border border-[#8B2635]/40 bg-[#FAF9F5] text-xs font-bold text-[#8B2635] focus:outline-hidden"
               >
-                <option value="author_first_name">1. بأول اسم المؤلف (الاسم الأول - المعتمد)</option>
-                <option value="author_family">2. باسم الشهرة / العائلة</option>
+                <option value="author_first_name">1. بأول اسم مكتوب بالمرجع (الاسم الأول للعرب / اللقب والجد للمراجع الأجنبية - معتمد)</option>
+                <option value="author_family">2. باسم العائلة / اللقب والجد</option>
                 <option value="book_title">3. بعنوان الكتاب أو المرجع</option>
               </select>
             </div>
@@ -1254,9 +1322,10 @@ export const MasterCatalogueView: React.FC<MasterCatalogueViewProps> = ({
 
               {/* Preset Academic Examples */}
               <div className="space-y-1.5">
-                <span className="text-[11px] font-medium text-[#6B7280]">أمثلة من مراجع الأطروحة للتحقق السريع:</span>
+                <span className="text-[11px] font-medium text-[#6B7280]">أمثلة من مراجع الأطروحة للتحقق السريع وتحديث المكتبة:</span>
                 <div className="flex flex-wrap gap-1.5">
                   {[
+                    'Moreno Echevarria, J. M., Los Almogavares y la memoria de la gesta catalana en Oriente, Boletin Millares Carlo, 2004, P.83.',
                     'Akropolites, G., The History, Oxford 2007',
                     'Alix, M., Precis Del Histoire, Paris 1822',
                     'Bartusis, M. C., The Late Byzantine Army',
@@ -1273,7 +1342,7 @@ export const MasterCatalogueView: React.FC<MasterCatalogueViewProps> = ({
                       }}
                       className="px-2.5 py-1 rounded-lg bg-[#FAF8F5] hover:bg-[#F0EBE1] border border-[#E5E0D8] text-[11px] text-[#554D41] transition-colors cursor-pointer"
                     >
-                      {ex}
+                      {ex.length > 50 ? ex.slice(0, 48) + '...' : ex}
                     </button>
                   ))}
                 </div>
@@ -1295,8 +1364,25 @@ export const MasterCatalogueView: React.FC<MasterCatalogueViewProps> = ({
                       <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
                       <h4 className="font-bold text-sm text-[#1F2937]">نتيجة التدقيق الببليوجرافي المعتمدة</h4>
                     </div>
-                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 font-bold border border-emerald-300">
-                      تم التحقق الأكاديمي
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 font-bold border border-emerald-300">
+                        تم التدقيق وتجريد الألقاب
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Classification Letter Badge Box */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-amber-50/70 rounded-xl border border-amber-200/80">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xs font-bold text-[#7D2433]">حرف التصنيف والفهرسة المعتمد بالمكتبة:</span>
+                      <span className="px-3 py-1 rounded-lg bg-[#8B2635] text-white font-black text-sm shadow-xs font-mono">
+                        حرف [{getDerivedKey(aiLookupResult)}]
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-[#6B7280]">
+                      {/[a-zA-Z]/.test(aiLookupResult.authorFamilyName || aiLookupResult.authorFullName || '')
+                        ? 'مصنف باسم العائلة (Surname) وفق المعايير الأكاديمية للمراجع الأجنبية'
+                        : 'مصنف بالاسم الأول وفق معايير المراجع العربية'}
                     </span>
                   </div>
 
@@ -1375,14 +1461,34 @@ export const MasterCatalogueView: React.FC<MasterCatalogueViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Modal Action Buttons */}
-                  <div className="pt-2 flex items-center justify-end gap-3">
+                  {/* Modal Action Buttons: Direct Save or Review */}
+                  <div className="pt-3 border-t border-[#E8E1D5] flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3">
                     <button
+                      type="button"
                       onClick={() => handleApplyAiResultToNewRef(aiLookupResult)}
-                      className="px-5 py-2.5 bg-[#8B2635] hover:bg-[#731E2A] text-white font-bold rounded-xl text-xs md:text-sm flex items-center gap-2 shadow-sm cursor-pointer"
+                      className="px-4 py-2.5 bg-[#FAF8F5] hover:bg-[#F0EBE1] border border-[#C5B79F] text-[#4A4036] font-semibold rounded-xl text-xs md:text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
                     >
                       <BookOpen className="w-4 h-4" />
-                      <span>إضافة وتثبيت المرجع في الفهرس</span>
+                      <span>مراجعة وتعديل الحقول قبل الحفظ</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSaveAiResultDirectlyToLibrary(aiLookupResult)}
+                      disabled={isSavingAiRef}
+                      className="px-5 py-2.5 bg-[#8B2635] hover:bg-[#731E2A] disabled:bg-[#9E8B83] text-white font-bold rounded-xl text-xs md:text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer transition-all"
+                    >
+                      {isSavingAiRef ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>جارٍ التحديث والحفظ...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span>حفظ وتحديث المكتبة فوراً (تحت حرف [{getDerivedKey(aiLookupResult)}])</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

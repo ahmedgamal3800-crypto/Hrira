@@ -2973,7 +2973,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Michael VIII Palaiologos",
       "Fourth Crusade"
     ],
-    "alphabetKey": "G",
+    "alphabetKey": "A",
     "categoryIds": [
       "cat-1",
       "cat-3"
@@ -3007,7 +3007,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Balkans",
       "Mehmed II"
     ],
-    "alphabetKey": "M",
+    "alphabetKey": "A",
     "categoryIds": [
       "cat-2"
     ],
@@ -3039,7 +3039,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Palaiologan Predecessors",
       "Byzantine Identity"
     ],
-    "alphabetKey": "D",
+    "alphabetKey": "A",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -3072,7 +3072,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Latin Relations",
       "Decline of Byzantium"
     ],
-    "alphabetKey": "M",
+    "alphabetKey": "A",
     "categoryIds": [
       "cat-1",
       "cat-3",
@@ -3107,7 +3107,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Crusade of Varna",
       "Constantine XI in Morea"
     ],
-    "alphabetKey": "A",
+    "alphabetKey": "O",
     "categoryIds": [
       "cat-2",
       "cat-1"
@@ -3141,7 +3141,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Mehmed II",
       "Gaza Tradition"
     ],
-    "alphabetKey": "A",
+    "alphabetKey": "D",
     "categoryIds": [
       "cat-2",
       "cat-1"
@@ -3209,7 +3209,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Ottoman Siege",
       "Genoese at Galata"
     ],
-    "alphabetKey": "F",
+    "alphabetKey": "B",
     "categoryIds": [
       "cat-2",
       "cat-1",
@@ -3243,7 +3243,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Western Voyage",
       "Byzantine Diplomacy"
     ],
-    "alphabetKey": "J",
+    "alphabetKey": "B",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -3276,7 +3276,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "European Turkey",
       "Historical Geography"
     ],
-    "alphabetKey": "T",
+    "alphabetKey": "B",
     "categoryIds": [
       "cat-2",
       "cat-4"
@@ -3309,7 +3309,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Hexamilion",
       "Constantine XI Military Defense"
     ],
-    "alphabetKey": "M",
+    "alphabetKey": "B",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -3342,7 +3342,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Cyriacus of Ancona",
       "Murad II Invasion 1446"
     ],
-    "alphabetKey": "E",
+    "alphabetKey": "B",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -3375,7 +3375,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Genoese and Venetians",
       "Siege Economics"
     ],
-    "alphabetKey": "G",
+    "alphabetKey": "B",
     "categoryIds": [
       "cat-1",
       "cat-2",
@@ -3410,7 +3410,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Institutions Byzantines",
       "Constantin XI"
     ],
-    "alphabetKey": "L",
+    "alphabetKey": "B",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -3443,7 +3443,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Greek Learning",
       "Fall of 1453"
     ],
-    "alphabetKey": "R",
+    "alphabetKey": "B",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -3476,7 +3476,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Thrace and Gallipoli",
       "Frankokratia"
     ],
-    "alphabetKey": "R",
+    "alphabetKey": "B",
     "categoryIds": [
       "cat-3",
       "cat-1",
@@ -3512,7 +3512,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Hesychasm",
       "Palaiologoi Dynasty"
     ],
-    "alphabetKey": "J",
+    "alphabetKey": "K",
     "categoryIds": [
       "cat-1",
       "cat-2"
@@ -3545,7 +3545,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Maritime Trade",
       "Byzantine Decline"
     ],
-    "alphabetKey": "M",
+    "alphabetKey": "C",
     "categoryIds": [
       "cat-3",
       "cat-1",
@@ -3580,7 +3580,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Serbian Despotate",
       "Fall of Constantinople"
     ],
-    "alphabetKey": "G",
+    "alphabetKey": "C",
     "categoryIds": [
       "cat-2",
       "cat-4"
@@ -3613,7 +3613,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Siege of Constantinople",
       "Theology and Politics"
     ],
-    "alphabetKey": "S",
+    "alphabetKey": "Ç",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -3648,7 +3648,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Constantine XI",
       "Peloponnese"
     ],
-    "alphabetKey": "L",
+    "alphabetKey": "C",
     "categoryIds": [
       "cat-1",
       "cat-2"
@@ -3681,7 +3681,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Palaiologan Empire",
       "Chronology"
     ],
-    "alphabetKey": "P",
+    "alphabetKey": "C",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -3714,7 +3714,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Ottoman Conquest",
       "Late Middle Ages"
     ],
-    "alphabetKey": "E",
+    "alphabetKey": "C",
     "categoryIds": [
       "cat-3",
       "cat-4"
@@ -3747,7 +3747,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Byzantine Collapse",
       "Balkan Wars"
     ],
-    "alphabetKey": "V",
+    "alphabetKey": "C",
     "categoryIds": [
       "cat-2",
       "cat-4"
@@ -3781,7 +3781,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Grand Logothete",
       "Latin Rule"
     ],
-    "alphabetKey": "N",
+    "alphabetKey": "C",
     "categoryIds": [
       "cat-1",
       "cat-3"
@@ -3815,7 +3815,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "John VII Palaiologos",
       "Eyewitness Description"
     ],
-    "alphabetKey": "R",
+    "alphabetKey": "C",
     "categoryIds": [
       "cat-1",
       "cat-2",
@@ -3849,7 +3849,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Sultan Mehmed II",
       "Constantine Palaiologos"
     ],
-    "alphabetKey": "E",
+    "alphabetKey": "C",
     "categoryIds": [
       "cat-2",
       "cat-4"
@@ -3884,7 +3884,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Union of Churches",
       "Latin Translation of Aquinas"
     ],
-    "alphabetKey": "D",
+    "alphabetKey": "K",
     "categoryIds": [
       "cat-1",
       "cat-3"
@@ -3917,7 +3917,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Late Byzantine Military",
       "Resistance Against Turks"
     ],
-    "alphabetKey": "G",
+    "alphabetKey": "D",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -3984,7 +3984,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Rescue of Constantinople",
       "Anatolia Campaign"
     ],
-    "alphabetKey": "M",
+    "alphabetKey": "A",
     "categoryIds": [
       "cat-2",
       "cat-1",
@@ -4018,7 +4018,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Palaiologan Renaissance",
       "Constantinople"
     ],
-    "alphabetKey": "C",
+    "alphabetKey": "D",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -4052,7 +4052,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Helena Dragas",
       "Court Life"
     ],
-    "alphabetKey": "C",
+    "alphabetKey": "D",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -4087,7 +4087,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Diplomatics",
       "Charters of Palaiologoi"
     ],
-    "alphabetKey": "F",
+    "alphabetKey": "D",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -4154,7 +4154,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Palaiologan Burials",
       "Archaeology"
     ],
-    "alphabetKey": "G",
+    "alphabetKey": "D",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -4187,7 +4187,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Andronikos II",
       "Textual Criticism"
     ],
-    "alphabetKey": "A",
+    "alphabetKey": "F",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -4222,7 +4222,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Constantine XI",
       "Economic Conditions"
     ],
-    "alphabetKey": "G",
+    "alphabetKey": "F",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -4255,7 +4255,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Palaiologan Painting",
       "Italian Renaissance"
     ],
-    "alphabetKey": "J",
+    "alphabetKey": "F",
     "categoryIds": [
       "cat-1",
       "cat-3",
@@ -4289,7 +4289,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Ottoman Expansion",
       "Bithynia"
     ],
-    "alphabetKey": "C",
+    "alphabetKey": "F",
     "categoryIds": [
       "cat-1",
       "cat-2",
@@ -4323,7 +4323,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Unpublished Byzantine Account",
       "Constantinople Defense"
     ],
-    "alphabetKey": "P",
+    "alphabetKey": "G",
     "categoryIds": [
       "cat-1",
       "cat-2",
@@ -4357,7 +4357,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Charles of Anjou",
       "Sicilian Vespers"
     ],
-    "alphabetKey": "D",
+    "alphabetKey": "G",
     "categoryIds": [
       "cat-1",
       "cat-3",
@@ -4391,7 +4391,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Bayezid I",
       "Bithynia and Balkans"
     ],
-    "alphabetKey": "H",
+    "alphabetKey": "G",
     "categoryIds": [
       "cat-2",
       "cat-1",
@@ -4425,7 +4425,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Princesses of Byzantium",
       "Helena Dragas"
     ],
-    "alphabetKey": "J",
+    "alphabetKey": "G",
     "categoryIds": [
       "cat-1",
       "cat-3",
@@ -4461,7 +4461,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Palamism Controversy",
       "Fourteenth Century"
     ],
-    "alphabetKey": "N",
+    "alphabetKey": "G",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -4494,7 +4494,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Byzance",
       "Turcs Seldjoukides et Ottomans"
     ],
-    "alphabetKey": "R",
+    "alphabetKey": "G",
     "categoryIds": [
       "cat-1",
       "cat-3",
@@ -4530,7 +4530,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Sultan Mehmed II",
       "Documents Ottomans"
     ],
-    "alphabetKey": "J",
+    "alphabetKey": "H",
     "categoryIds": [
       "cat-2",
       "cat-4"
@@ -4563,7 +4563,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Western Assistance",
       "End of Empire"
     ],
-    "alphabetKey": "J",
+    "alphabetKey": "H",
     "categoryIds": [
       "cat-1",
       "cat-3",
@@ -4597,7 +4597,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Blachernae",
       "Hagia Sophia"
     ],
-    "alphabetKey": "J",
+    "alphabetKey": "H",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -4630,7 +4630,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Mehmed II",
       "Conquest of Constantinople"
     ],
-    "alphabetKey": "A",
+    "alphabetKey": "H",
     "categoryIds": [
       "cat-2",
       "cat-4"
@@ -4664,7 +4664,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Conquest of Constantinople 1453",
       "Ottoman Feudalism"
     ],
-    "alphabetKey": "H",
+    "alphabetKey": "İ",
     "categoryIds": [
       "cat-2",
       "cat-4"
@@ -4697,7 +4697,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Women Rulers",
       "Palaiologan Court"
     ],
-    "alphabetKey": "G",
+    "alphabetKey": "J",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -4730,7 +4730,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Ottoman Conquest of Thrace",
       "Fortresses"
     ],
-    "alphabetKey": "R",
+    "alphabetKey": "J",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -4764,7 +4764,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Chute de Byzance",
       "Hachette"
     ],
-    "alphabetKey": "A",
+    "alphabetKey": "J",
     "categoryIds": [
       "cat-2",
       "cat-4"
@@ -4798,7 +4798,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Balkans",
       "Constantine XI"
     ],
-    "alphabetKey": "N",
+    "alphabetKey": "I",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -4831,7 +4831,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Christian Union",
       "Crusade of Varna"
     ],
-    "alphabetKey": "J",
+    "alphabetKey": "G",
     "categoryIds": [
       "cat-3",
       "cat-1",
@@ -4865,7 +4865,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Mistras",
       "Palaiologan Renaissance"
     ],
-    "alphabetKey": "A",
+    "alphabetKey": "K",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -4898,7 +4898,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Byzantine Statehood",
       "Oxford"
     ],
-    "alphabetKey": "A",
+    "alphabetKey": "K",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -4933,7 +4933,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Palaiologoi",
       "Dumbarton Oaks"
     ],
-    "alphabetKey": "A",
+    "alphabetKey": "K",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -4966,7 +4966,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Eugenius IV",
       "Crusade for Constantinople"
     ],
-    "alphabetKey": "J",
+    "alphabetKey": "K",
     "categoryIds": [
       "cat-3",
       "cat-4"
@@ -4999,7 +4999,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Byzantine Settlements",
       "Ottoman Siege Routes"
     ],
-    "alphabetKey": "A",
+    "alphabetKey": "K",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -5032,7 +5032,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Venice and Genoa",
       "Byzantine Economy"
     ],
-    "alphabetKey": "A",
+    "alphabetKey": "L",
     "categoryIds": [
       "cat-1",
       "cat-3",
@@ -5067,7 +5067,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Palaeologeia kai Peloponnesiaka",
       "Byzantine Poetry"
     ],
-    "alphabetKey": "S",
+    "alphabetKey": "L",
     "categoryIds": [
       "cat-1",
       "cat-5"
@@ -5100,7 +5100,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Balkans",
       "Garnier Frères"
     ],
-    "alphabetKey": "T",
+    "alphabetKey": "L",
     "categoryIds": [
       "cat-2",
       "cat-4"
@@ -5135,7 +5135,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Chute de l'Empire d'Orient",
       "Firmin Didot"
     ],
-    "alphabetKey": "C",
+    "alphabetKey": "L",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -5168,7 +5168,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Latin Translation of Turkish Chronicles",
       "Siege of 1453"
     ],
-    "alphabetKey": "J",
+    "alphabetKey": "L",
     "categoryIds": [
       "cat-2",
       "cat-1"
@@ -5202,7 +5202,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Western Europe and Byzantium",
       "Ottomans"
     ],
-    "alphabetKey": "E",
+    "alphabetKey": "L",
     "categoryIds": [
       "cat-3",
       "cat-4"
@@ -5235,7 +5235,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Achaea",
       "Despotate of Morea"
     ],
-    "alphabetKey": "J",
+    "alphabetKey": "L",
     "categoryIds": [
       "cat-3",
       "cat-1",
@@ -5302,7 +5302,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Crusades",
       "Byzantine Aristocracy"
     ],
-    "alphabetKey": "P",
+    "alphabetKey": "M",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -5335,7 +5335,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Serbo-Byzantine Relations",
       "Balkans"
     ],
-    "alphabetKey": "L",
+    "alphabetKey": "M",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -5402,7 +5402,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Lips Monastery",
       "Constantine XI Burial Mystery"
     ],
-    "alphabetKey": "N",
+    "alphabetKey": "M",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -5436,7 +5436,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Chevaliers chrétiens",
       "Gustave Doré"
     ],
-    "alphabetKey": "J",
+    "alphabetKey": "M",
     "categoryIds": [
       "cat-3",
       "cat-1",
@@ -5462,7 +5462,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
     "edition": "1st edition",
     "language": "English",
     "referenceType": "كتاب (Book)",
-    "fullCitation": "Miller, W., Essays of the latin orient, 1921.",
+    "fullCitation": "Miller, W., Essays Of The Latin Orient, Cambridge At The University Press 1921. P. 20",
     "keywords": [
       "Latin Orient",
       "Frankish Greece",
@@ -5470,7 +5470,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Gattilusio of Lesbos",
       "Despotate of Morea"
     ],
-    "alphabetKey": "W",
+    "alphabetKey": "M",
     "categoryIds": [
       "cat-3",
       "cat-1",
@@ -5481,7 +5481,44 @@ export const SEED_REFERENCES_LIST: Reference[] = [
     "dateAdded": "2026-09-01T08:00:00.000Z",
     "lastModified": "2026-09-10T12:00:00.000Z",
     "authorBio": "المؤرخ البريطاني العظيم المتخصص في المشرق اللاتيني وتاريخ اليونان الإفرنجية والوجود الفينيسي والجينوي في بحر إيجه.",
-    "historicalRelevance": "Frankish Greece, The Venetian Levant, and the Genoese Colonies in the Aegean"
+    "historicalRelevance": "Frankish Greece, The Venetian Levant, and the Genoese Colonies in the Aegean",
+    "pages": "20"
+  },
+  {
+    "id": "ref-for-75-b",
+    "authorFamilyName": "Miller",
+    "authorFirstName": "William",
+    "authorFullName": "ويليام ميلر (William Miller)",
+    "title": "The Latins in the Levant: A History of Frankish Greece (1204–1566)",
+    "subtitle": "A History of Frankish Greece (1204–1566)",
+    "publisher": "John Murray",
+    "publicationPlace": "London",
+    "publicationYear": "1908",
+    "pages": "293-301",
+    "edition": "1st edition",
+    "language": "English",
+    "referenceType": "كتاب (Book)",
+    "fullCitation": "Miller, W., The Latins in the Levant: A History of Frankish Greece (1204–1566), London, John Murray, 1908, PP. 293-301.",
+    "keywords": [
+      "The Latins in the Levant",
+      "Frankish Greece",
+      "Morea",
+      "Latin Orient",
+      "Peloponnese",
+      "1204-1566"
+    ],
+    "alphabetKey": "M",
+    "categoryIds": [
+      "cat-3",
+      "cat-1",
+      "cat-4"
+    ],
+    "isFavorite": false,
+    "inTrash": false,
+    "dateAdded": "2026-09-01T08:00:00.000Z",
+    "lastModified": "2026-09-10T12:00:00.000Z",
+    "authorBio": "المؤرخ والباحث البريطاني المتخصص في تاريخ المشرق اللاتيني ودوقية أثينا وإمارة آخايا وبيلوبونيز (المورة) وتاريخ اليونان في العصر الصليبي والفرنجي.",
+    "historicalRelevance": "المرجع التأسيسي الرائد في دراسة تاريخ اليونان الإفرنجية واللاتين في بلاد الشام والمورة وصلتها بعهد قسطنطين الحادي عشر في المورة قبل توليه عرش القسطنطينية."
   },
   {
     "id": "ref-for-76",
@@ -5504,7 +5541,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Blachernae Palace",
       "Golden Horn"
     ],
-    "alphabetKey": "A",
+    "alphabetKey": "M",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -5537,7 +5574,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Imperial Monasteries",
       "Nicaean Legacy"
     ],
-    "alphabetKey": "E",
+    "alphabetKey": "M",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -5570,7 +5607,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Andronico Paleologo",
       "Almogavares"
     ],
-    "alphabetKey": "F",
+    "alphabetKey": "M",
     "categoryIds": [
       "cat-3",
       "cat-1"
@@ -5603,7 +5640,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Orsini",
       "Ottoman Annexation"
     ],
-    "alphabetKey": "D",
+    "alphabetKey": "N",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -5636,7 +5673,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Fall of 1453",
       "Heroic Biography"
     ],
-    "alphabetKey": "D",
+    "alphabetKey": "N",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -5669,7 +5706,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Ottoman Threat",
       "Civil Wars"
     ],
-    "alphabetKey": "D",
+    "alphabetKey": "N",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -5702,7 +5739,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Palamism",
       "Turkish Mercenaries"
     ],
-    "alphabetKey": "D",
+    "alphabetKey": "N",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -5735,7 +5772,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Palaiologoi",
       "Balkan Dominance"
     ],
-    "alphabetKey": "G",
+    "alphabetKey": "O",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -5769,7 +5806,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Agrarian Relations",
       "Pronoia"
     ],
-    "alphabetKey": "G",
+    "alphabetKey": "O",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -5804,7 +5841,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Catalan Company",
       "First Palaiologan Decades"
     ],
-    "alphabetKey": "G",
+    "alphabetKey": "P",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -5837,7 +5874,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Siege of 1453",
       "Routledge"
     ],
-    "alphabetKey": "M",
+    "alphabetKey": "P",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -5870,7 +5907,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Palaiologoi Ancestry",
       "Athlone Press"
     ],
-    "alphabetKey": "D",
+    "alphabetKey": "P",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -5903,7 +5940,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Constantine XI",
       "Military Defense"
     ],
-    "alphabetKey": "E",
+    "alphabetKey": "P",
     "categoryIds": [
       "cat-1",
       "cat-2",
@@ -5937,7 +5974,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Byzantine Themes",
       "Anatolia"
     ],
-    "alphabetKey": "W",
+    "alphabetKey": "R",
     "categoryIds": [
       "cat-1",
       "cat-2",
@@ -5971,7 +6008,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Daily Life",
       "Constantinople"
     ],
-    "alphabetKey": "D",
+    "alphabetKey": "T",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -6004,7 +6041,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Eugene IV",
       "Nicholas V"
     ],
-    "alphabetKey": "R",
+    "alphabetKey": "M",
     "categoryIds": [
       "cat-3",
       "cat-4"
@@ -6037,7 +6074,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Siege of Constantinople",
       "Chronology"
     ],
-    "alphabetKey": "J",
+    "alphabetKey": "R",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -6070,7 +6107,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Palaiologan Intellect",
       "Constantine XI Court"
     ],
-    "alphabetKey": "S",
+    "alphabetKey": "R",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -6103,7 +6140,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Aragonese Alliance",
       "Mediterranean Power"
     ],
-    "alphabetKey": "S",
+    "alphabetKey": "R",
     "categoryIds": [
       "cat-1",
       "cat-3",
@@ -6137,7 +6174,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Andronic II",
       "Duché d'Athènes"
     ],
-    "alphabetKey": "G",
+    "alphabetKey": "S",
     "categoryIds": [
       "cat-3",
       "cat-1",
@@ -6171,7 +6208,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Byzantine Neighbours",
       "Morea"
     ],
-    "alphabetKey": "K",
+    "alphabetKey": "S",
     "categoryIds": [
       "cat-3",
       "cat-1",
@@ -6241,7 +6278,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Constantine XI",
       "Barbaro e Leonard"
     ],
-    "alphabetKey": "A",
+    "alphabetKey": "P",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -6274,7 +6311,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Saracens and Turks",
       "Historical Narrative"
     ],
-    "alphabetKey": "R",
+    "alphabetKey": "S",
     "categoryIds": [
       "cat-4"
     ],
@@ -6307,7 +6344,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Fall of Constantinople",
       "Eyewitness Traditions"
     ],
-    "alphabetKey": "T",
+    "alphabetKey": "S",
     "categoryIds": [
       "cat-2",
       "cat-1"
@@ -6341,7 +6378,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Chronicon Minus",
       "Death of Emperor"
     ],
-    "alphabetKey": "G",
+    "alphabetKey": "S",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -6375,7 +6412,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Post-Byzantine Art",
       "Late Middle Ages"
     ],
-    "alphabetKey": "A",
+    "alphabetKey": "S",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -6443,7 +6480,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "John VIII",
       "Constantine in Morea"
     ],
-    "alphabetKey": "P",
+    "alphabetKey": "T",
     "categoryIds": [
       "cat-1",
       "cat-3"
@@ -6476,7 +6513,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Army Demographics",
       "Fall of 1453"
     ],
-    "alphabetKey": "W",
+    "alphabetKey": "T",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -6509,7 +6546,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Michel VIII",
       "Prosopographie"
     ],
-    "alphabetKey": "J",
+    "alphabetKey": "V",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -6543,7 +6580,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Fall of Constantinople",
       "Constantine XI Dragases"
     ],
-    "alphabetKey": "A",
+    "alphabetKey": "V",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -6576,7 +6613,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Court Offices",
       "Palaiologan Administration"
     ],
-    "alphabetKey": "J",
+    "alphabetKey": "V",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -6609,7 +6646,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Monastic Tonsure",
       "Palaiologoi"
     ],
-    "alphabetKey": "E",
+    "alphabetKey": "V",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -6642,7 +6679,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Byzantine Diplomacy",
       "Imperial Marriages"
     ],
-    "alphabetKey": "A",
+    "alphabetKey": "W",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -6675,7 +6712,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Epiros",
       "Latin Defeat"
     ],
-    "alphabetKey": "J",
+    "alphabetKey": "W",
     "categoryIds": [
       "cat-1",
       "cat-3",
@@ -6709,7 +6746,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Dobruja",
       "Christian Turks in Ottoman Service"
     ],
-    "alphabetKey": "P",
+    "alphabetKey": "W",
     "categoryIds": [
       "cat-2",
       "cat-4"
@@ -6742,7 +6779,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Baldwin II",
       "Michael VIII Reconquest"
     ],
-    "alphabetKey": "R",
+    "alphabetKey": "W",
     "categoryIds": [
       "cat-3",
       "cat-1",
@@ -6776,7 +6813,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Ottoman Interregnum",
       "Süleyman Çelebi"
     ],
-    "alphabetKey": "E",
+    "alphabetKey": "Z",
     "categoryIds": [
       "cat-1",
       "cat-4"
@@ -6811,7 +6848,7 @@ export const SEED_REFERENCES_LIST: Reference[] = [
       "Constantin XI en Morée",
       "Institutions Peloponnèse"
     ],
-    "alphabetKey": "D",
+    "alphabetKey": "Z",
     "categoryIds": [
       "cat-1",
       "cat-4"

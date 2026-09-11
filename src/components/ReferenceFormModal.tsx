@@ -787,6 +787,7 @@ export const ReferenceFormModal: React.FC<ReferenceFormModalProps> = ({
             <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] text-[#6B7280]">
               <span className="font-medium text-[#4B5563]">أمثلة للتجربة بنقرة واحدة:</span>
               {[
+                { label: 'Moreno Echevarria (توثيق فرسان الألماجوفار)', val: 'Moreno Echevarria, J. M., Los Almogavares y la memoria de la gesta catalana en Oriente, Boletin Millares Carlo, 2004, P.83.' },
                 { label: 'Angelov (توثيق خام كامل مع الصفحات)', val: 'Angelov, D., Imperial Ideology and Political Thought in Byzantium,1204–1330, Cambridge, Cambridge University Press,2007, PP. 78- 133.' },
                 { label: 'Akropolites, G., The History', val: 'Akropolites, G., The History' },
                 { label: 'Bartusis, The Late Byzantine Army', val: 'Bartusis, The Late Byzantine Army' },

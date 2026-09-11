@@ -21,7 +21,8 @@ import {
 } from '../types';
 import { AlphabetBar } from './AlphabetBar';
 import { ReferenceCard } from './ReferenceCard';
-import { sortReferences, groupReferencesByLetter } from '../services/alphabet';
+import { sortReferences, groupReferencesByLetter, getAuthorCanonicalLetter } from '../services/alphabet';
+import { matchesReferenceSearch } from '../services/searchUtils';
 
 interface LibraryViewProps {
   references: Reference[];
@@ -77,8 +78,11 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       if (ref.inTrash) return false;
 
       // Letter filter
-      if (selectedLetter && ref.alphabetKey !== selectedLetter) {
-        return false;
+      if (selectedLetter) {
+        const canonicalLetter = getAuthorCanonicalLetter(ref);
+        if (ref.alphabetKey !== selectedLetter && canonicalLetter !== selectedLetter) {
+          return false;
+        }
       }
 
       // Language filter
@@ -101,16 +105,9 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         return false;
       }
 
-      // Query filter
+      // Query filter: unified multi-field search (title, author, grandfather, citation, keywords)
       if (searchQuery.trim()) {
-        const q = searchQuery.trim().toLowerCase();
-        const matchesTitle = ref.title.toLowerCase().includes(q);
-        const matchesAuthor = (ref.authorFullName || ref.authorFamilyName || '').toLowerCase().includes(q);
-        const matchesCitation = (ref.fullCitation || '').toLowerCase().includes(q);
-        const matchesKeywords = ref.keywords?.some((k) => k.toLowerCase().includes(q));
-        const matchesPublisher = (ref.publisher || '').toLowerCase().includes(q);
-
-        if (!matchesTitle && !matchesAuthor && !matchesCitation && !matchesKeywords && !matchesPublisher) {
+        if (!matchesReferenceSearch(ref, searchQuery)) {
           return false;
         }
       }
@@ -130,7 +127,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
     references
       .filter((r) => !r.inTrash)
       .forEach((r) => {
-        const k = r.alphabetKey || '#';
+        const k = getAuthorCanonicalLetter(r);
         counts[k] = (counts[k] || 0) + 1;
       });
     return counts;

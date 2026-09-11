@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Reference, CategoryItem, ViewMode } from '../types';
 import { ReferenceCard } from './ReferenceCard';
+import { matchesReferenceSearch, normalizeSearchText, expandSearchTokens } from '../services/searchUtils';
 
 interface AdvancedSearchViewProps {
   references: Reference[];
@@ -30,6 +31,7 @@ export const AdvancedSearchView: React.FC<AdvancedSearchViewProps> = ({
   onToggleFavorite,
   onDeleteReference
 }) => {
+  const [unifiedQuery, setUnifiedQuery] = useState('');
   const [authorQuery, setAuthorQuery] = useState('');
   const [titleQuery, setTitleQuery] = useState('');
   const [citationQuery, setCitationQuery] = useState('');
@@ -46,6 +48,7 @@ export const AdvancedSearchView: React.FC<AdvancedSearchViewProps> = ({
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
   const handleReset = () => {
+    setUnifiedQuery('');
     setAuthorQuery('');
     setTitleQuery('');
     setCitationQuery('');
@@ -63,19 +66,38 @@ export const AdvancedSearchView: React.FC<AdvancedSearchViewProps> = ({
   const results = references.filter((ref) => {
     if (ref.inTrash) return false;
 
+    // 1. البحث الموحد (اسم المؤلف، اسم الجد، اسم الكتاب، نص التوثيق)
+    if (unifiedQuery.trim()) {
+      if (!matchesReferenceSearch(ref, unifiedQuery)) return false;
+    }
+
     if (authorQuery.trim()) {
-      const q = authorQuery.trim().toLowerCase();
-      const match = (ref.authorFullName || '').toLowerCase().includes(q) ||
-                    (ref.authorFamilyName || '').toLowerCase().includes(q) ||
-                    (ref.authorFirstName || '').toLowerCase().includes(q);
-      if (!match) return false;
+      const q = authorQuery.trim();
+      const normQ = normalizeSearchText(q);
+      const expanded = expandSearchTokens([normQ]);
+      
+      const authorFields = [
+        ref.authorFullName,
+        ref.authorFamilyName,
+        ref.authorFirstName
+      ].filter(Boolean).map(v => normalizeSearchText(String(v)));
+
+      const matched = authorFields.some(field => {
+        return expanded.some(t => field.includes(t));
+      });
+      if (!matched) return false;
     }
 
     if (titleQuery.trim()) {
-      const q = titleQuery.trim().toLowerCase();
-      if (!ref.title.toLowerCase().includes(q) && !(ref.subtitle || '').toLowerCase().includes(q)) {
-        return false;
-      }
+      const q = titleQuery.trim();
+      const normQ = normalizeSearchText(q);
+      const expanded = expandSearchTokens([normQ]);
+      
+      const titleFields = [ref.title, ref.subtitle].filter(Boolean).map(v => normalizeSearchText(String(v)));
+      const matched = titleFields.some(field => {
+        return expanded.some(t => field.includes(t));
+      });
+      if (!matched) return false;
     }
 
     if (citationQuery.trim()) {
@@ -144,6 +166,38 @@ export const AdvancedSearchView: React.FC<AdvancedSearchViewProps> = ({
             <RotateCcw className="w-3.5 h-3.5" />
             <span>إعادة ضبط المعايير</span>
           </button>
+        </div>
+
+        {/* Unified Quick Search Bar */}
+        <div className="mb-5 bg-[#FAF9F5] p-3.5 rounded-xl border border-[#DDD6CA]">
+          <label className="block text-xs font-bold text-[#8B2635] mb-1.5 flex items-center gap-1.5">
+            <Search className="w-3.5 h-3.5" />
+            <span>البحث الأكاديمي الموحد (باسم المؤلف، أو اسم الجد / العائلة، أو اسم الكتاب، أو نص التوثيق):</span>
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              value={unifiedQuery}
+              onChange={(e) => {
+                setUnifiedQuery(e.target.value);
+                setHasSearched(true);
+              }}
+              placeholder="ابحث مباشرة: مثال: Miller أو ميلر أو Essays of the Latin Orient أو ويليام..."
+              className="w-full pr-4 pl-10 py-2.5 bg-white border border-[#DDD6CA] rounded-lg text-sm text-[#1F2937] placeholder-[#94A3B8] focus:border-[#8B2635] focus:outline-hidden"
+            />
+            {unifiedQuery && (
+              <button
+                type="button"
+                onClick={() => setUnifiedQuery('')}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#94A3B8] hover:text-[#1F2937]"
+              >
+                مسح
+              </button>
+            )}
+          </div>
+          <p className="text-[11px] text-[#64748B] mt-1.5">
+            يقوم بالبحث الشامل والمتزامن باسم المؤلف الأول، والجد والعائلة، وعنوان الكتاب، والتعريب اللاتيني والعربي التلقائي.
+          </p>
         </div>
 
         {/* Filters Grid */}

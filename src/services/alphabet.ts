@@ -128,22 +128,187 @@ export function compareCanonicalLetters(letA: string, letB: string): number {
 }
 
 /**
- * Normalizes author first name for canonical alphabetical sorting:
- * Priority: authorFirstName -> authorFullName -> authorFamilyName -> title (fallback)
+ * Normalizes author name for canonical alphabetical sorting:
+ * - For Latin / foreign authors: In academic library science, foreign references
+ *   are catalogued and classified by Surname / Family Name (e.g. Moreno Echevarria -> M, Angelov -> A, Nicol -> N).
+ * - For Arabic authors: Sorted by author's first name (أول اسم للمؤلف مع تجريد الألقاب).
+ */
+/**
+ * Gets canonical sort key for an author:
+ * - Academic rule: Latin authors are classified by the first name written in the citation,
+ *   which is their Family Name / Surname / اسم الجد (e.g. "Miller, William").
+ * - Arabic authors: sorted by author first name (e.g. "عمر كحالة", "آنا كومنينا").
+ */
+export function getAuthorCanonicalSortKey(ref: Partial<Reference>, ignoreArabicArticle = false): string {
+  const isLatin = /^[A-Za-z\u00C0-\u024F]/.test(
+    (ref.authorFamilyName || ref.authorFullName || ref.fullCitation || ref.title || '').trim()
+  );
+
+  if (isLatin) {
+    if (ref.authorFamilyName && ref.authorFamilyName.trim()) {
+      let fam = stripHonorificTitles(ref.authorFamilyName.trim());
+      if (/^van\s+/i.test(fam)) fam = fam.replace(/^van\s+/i, '');
+      if (/^von\s+/i.test(fam)) fam = fam.replace(/^von\s+/i, '');
+      if (/^de\s+la\s+/i.test(fam)) fam = fam.replace(/^de\s+la\s+/i, '');
+      if (/^de\s+/i.test(fam)) fam = fam.replace(/^de\s+/i, '');
+      const first = ref.authorFirstName ? stripHonorificTitles(ref.authorFirstName.trim()) : '';
+      return `${fam}, ${first}`.trim();
+    }
+    if (ref.fullCitation && ref.fullCitation.trim()) {
+      const match = ref.fullCitation.trim().match(/^([A-Za-z\u00C0-\u024F\s\-']+(?:,\s*[A-Za-z\.\s]+)?)/);
+      if (match) return match[1].trim();
+    }
+    if (ref.authorFullName && ref.authorFullName.trim()) {
+      const full = stripHonorificTitles(ref.authorFullName.trim());
+      if (full.includes(',')) {
+        return full;
+      }
+      const tokens = full.split(/\s+/).filter(t => /^[A-Za-z]/.test(t));
+      if (tokens.length > 1) {
+        return `${tokens[tokens.length - 1]}, ${tokens.slice(0, -1).join(' ')}`;
+      }
+      return full;
+    }
+  }
+
+  // Arabic / default: sorted by author's first name
+  return getAuthorFirstNameSortKey(ref, ignoreArabicArticle);
+}
+
+/**
+ * Gets the canonical classification letter for an author:
+ * - Academic rule requested by researcher:
+ *   "المفروض الكتابين دول لنفس الكاتب وحرفين مختلفين يبقي وحد باول اسم مكتوب بالمرجع اللي هو اسم الجد دا التصنيف"
+ * - For Latin authors: Classified strictly by the first name written in the reference,
+ *   which is the Family Name / Surname / الجد (e.g. Miller, W. -> M, Nicol, D. -> N, Runciman, S. -> R).
+ * - For Arabic authors: Classified by first name written (عمر -> ع، ناصر الدين -> ن، المقريزي -> م/ا).
+ */
+export function getAuthorCanonicalLetter(ref: Partial<Reference>, ignoreArabicArticle = false): string {
+  // 1. Check if Latin or foreign reference
+  const isLatin = /^[A-Za-z\u00C0-\u024F]/.test(
+    (ref.authorFamilyName || ref.authorFullName || ref.fullCitation || ref.title || '').trim()
+  );
+
+  if (isLatin) {
+    // Check Family Name / Surname (اسم الجد / العائلة)
+    if (ref.authorFamilyName && ref.authorFamilyName.trim()) {
+      let fam = stripHonorificTitles(ref.authorFamilyName.trim());
+      if (/^van\s+/i.test(fam)) fam = fam.replace(/^van\s+/i, '');
+      if (/^von\s+/i.test(fam)) fam = fam.replace(/^von\s+/i, '');
+      if (/^de\s+la\s+/i.test(fam)) fam = fam.replace(/^de\s+la\s+/i, '');
+      if (/^de\s+/i.test(fam)) fam = fam.replace(/^de\s+/i, '');
+      const firstChar = fam.trim().charAt(0);
+      if (/^[A-Za-z\u00C0-\u024F]/i.test(firstChar)) {
+        return firstChar.toUpperCase();
+      }
+    }
+
+    // Check first word of citation (e.g. "Miller, W., ...")
+    if (ref.fullCitation && ref.fullCitation.trim()) {
+      const match = ref.fullCitation.trim().match(/^([A-Za-z\u00C0-\u024F]+)/);
+      if (match) {
+        return match[1].charAt(0).toUpperCase();
+      }
+    }
+
+    // Check author full name
+    if (ref.authorFullName && ref.authorFullName.trim()) {
+      const full = stripHonorificTitles(ref.authorFullName.trim());
+      // e.g. "Miller, W."
+      if (full.includes(',')) {
+        const match = full.trim().match(/^([A-Za-z\u00C0-\u024F]+)/);
+        if (match) return match[1].charAt(0).toUpperCase();
+      }
+      // e.g. Latin tokens "William Miller"
+      const latinTokens = full.split(/\s+/).filter(t => /^[A-Za-z\u00C0-\u024F]/.test(t));
+      if (latinTokens.length > 1) {
+        // Last token is surname
+        return latinTokens[latinTokens.length - 1].charAt(0).toUpperCase();
+      }
+      if (latinTokens.length === 1) {
+        return latinTokens[0].charAt(0).toUpperCase();
+      }
+    }
+
+    // If explicit alphabetKey is set and is Latin
+    if (ref.alphabetKey && /^[A-Za-z]/i.test(ref.alphabetKey.trim())) {
+      return ref.alphabetKey.trim().charAt(0).toUpperCase();
+    }
+  }
+
+  // 2. Arabic / default references
+  if (ref.alphabetKey && ref.alphabetKey.trim()) {
+    const k = ref.alphabetKey.trim();
+    if (/^[\u0600-\u06FF]/u.test(k)) {
+      const norm = normalizeArabicChar(k.charAt(0));
+      return ARABIC_LETTERS.includes(norm) ? norm : (norm || '#');
+    }
+    if (/^[A-Za-z]/i.test(k)) return k.charAt(0).toUpperCase();
+  }
+
+  const sortKey = getAuthorCanonicalSortKey(ref, ignoreArabicArticle);
+  if (!sortKey) return '#';
+
+  const firstChar = sortKey.charAt(0);
+
+  // Check if Latin letter
+  if (/^[A-Za-z]/i.test(firstChar)) {
+    return firstChar.toUpperCase();
+  }
+
+  // Check if Arabic letter
+  if (/^[\u0600-\u06FF]/u.test(firstChar)) {
+    const norm = normalizeArabicChar(firstChar);
+    return ARABIC_LETTERS.includes(norm) ? norm : (norm || '#');
+  }
+
+  return '#';
+}
+
+/**
+ * Normalizes author name for canonical alphabetical sorting:
+ * - For Latin references: uses Surname / Family Name first (e.g. Miller, William).
+ * - For Arabic references: uses author's first name (e.g. عمر كحالة).
  * Normalizes Alefs, removes tashkeel, handles leading symbols and optional 'ال'.
  */
 export function getAuthorFirstNameSortKey(ref: Partial<Reference>, ignoreArabicArticle = false): string {
+  const isLatin = /^[A-Za-z\u00C0-\u024F]/.test(
+    (ref.authorFamilyName || ref.authorFullName || ref.fullCitation || ref.title || '').trim()
+  );
+
   let name = '';
-  if (ref.authorFirstName && ref.authorFirstName.trim()) {
-    const first = stripHonorificTitles(ref.authorFirstName.trim());
-    const family = ref.authorFamilyName ? stripHonorificTitles(ref.authorFamilyName.trim()) : '';
-    name = family ? `${first} ${family}` : first;
-  } else if (ref.authorFullName && ref.authorFullName.trim()) {
-    name = stripHonorificTitles(ref.authorFullName.trim());
-  } else if (ref.authorFamilyName && ref.authorFamilyName.trim()) {
-    name = stripHonorificTitles(ref.authorFamilyName.trim());
-  } else if (ref.title && ref.title.trim()) {
-    name = ref.title.trim();
+
+  if (isLatin) {
+    // For Latin references, the first name written in academic citation is the Family Name / Surname / الجد
+    if (ref.authorFamilyName && ref.authorFamilyName.trim()) {
+      let fam = stripHonorificTitles(ref.authorFamilyName.trim());
+      if (/^van\s+/i.test(fam)) fam = fam.replace(/^van\s+/i, '');
+      if (/^von\s+/i.test(fam)) fam = fam.replace(/^von\s+/i, '');
+      if (/^de\s+la\s+/i.test(fam)) fam = fam.replace(/^de\s+la\s+/i, '');
+      if (/^de\s+/i.test(fam)) fam = fam.replace(/^de\s+/i, '');
+      const first = ref.authorFirstName ? stripHonorificTitles(ref.authorFirstName.trim()) : '';
+      name = `${fam}, ${first}`.trim();
+    } else if (ref.fullCitation && ref.fullCitation.trim()) {
+      const match = ref.fullCitation.trim().match(/^([A-Za-z\u00C0-\u024F\s\-']+(?:,\s*[A-Za-z\.\s]+)?)/);
+      name = match ? match[1].trim() : ref.fullCitation.trim();
+    } else if (ref.authorFullName && ref.authorFullName.trim()) {
+      name = stripHonorificTitles(ref.authorFullName.trim());
+    } else if (ref.title && ref.title.trim()) {
+      name = ref.title.trim();
+    }
+  } else {
+    // Arabic reference: sorted by first name
+    if (ref.authorFirstName && ref.authorFirstName.trim()) {
+      const first = stripHonorificTitles(ref.authorFirstName.trim());
+      const family = ref.authorFamilyName ? stripHonorificTitles(ref.authorFamilyName.trim()) : '';
+      name = family ? `${first} ${family}` : first;
+    } else if (ref.authorFullName && ref.authorFullName.trim()) {
+      name = stripHonorificTitles(ref.authorFullName.trim());
+    } else if (ref.authorFamilyName && ref.authorFamilyName.trim()) {
+      name = stripHonorificTitles(ref.authorFamilyName.trim());
+    } else if (ref.title && ref.title.trim()) {
+      name = ref.title.trim();
+    }
   }
 
   name = cleanLeadingSymbols(name);
@@ -164,31 +329,15 @@ export function getAuthorFirstNameSortKey(ref: Partial<Reference>, ignoreArabicA
  * (الترتيب الأبجدي بأول اسم المؤلف وليس اسم الكتاب)
  */
 export function getAuthorFirstNameLetter(ref: Partial<Reference>, ignoreArabicArticle = false): string {
-  const sortKey = getAuthorFirstNameSortKey(ref, ignoreArabicArticle);
-  if (!sortKey) return '#';
-
-  const firstChar = sortKey.charAt(0);
-
-  // Check if Latin letter
-  if (/^[A-Za-z]/i.test(firstChar)) {
-    return firstChar.toUpperCase();
-  }
-
-  // Check if Arabic letter
-  if (/^[\u0600-\u06FF]/u.test(firstChar)) {
-    const norm = normalizeArabicChar(firstChar);
-    return ARABIC_LETTERS.includes(norm) ? norm : (norm || '#');
-  }
-
-  return '#';
+  return getAuthorCanonicalLetter(ref, ignoreArabicArticle);
 }
 
 /**
- * Derives the alphabetical key for a reference based on author's first name
- * (الترتيب الأبجدي بأول اسم المؤلف)
+ * Derives the alphabetical key for a reference
+ * (احترام حرف الترتيب المخصص أو استنتاجه بدقة أكاديمية)
  */
 export function getAlphabetKey(ref: Partial<Reference>, ignoreArabicArticle = false): string {
-  return getAuthorFirstNameLetter(ref, ignoreArabicArticle);
+  return getAuthorCanonicalLetter(ref, ignoreArabicArticle);
 }
 
 /**
@@ -231,9 +380,9 @@ export function sortReferences(
 
     switch (rule) {
       case 'author': {
-        // Author: Sorted by author's first name (بأول اسم المؤلف)
-        valA = getAuthorFirstNameSortKey(a, ignoreArabicArticle);
-        valB = getAuthorFirstNameSortKey(b, ignoreArabicArticle);
+        // Author: Sorted by canonical sort key (الاسم الأول للعرب، واللقب/اسم العائلة للأجانب)
+        valA = getAuthorCanonicalSortKey(a, ignoreArabicArticle);
+        valB = getAuthorCanonicalSortKey(b, ignoreArabicArticle);
         break;
       }
       case 'title': {
